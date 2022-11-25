@@ -23,14 +23,11 @@ class CutCircuitsRequest:
 
 class CutCircuitsRequestSchema(ma.Schema):
     circuit = ma.fields.Str(required=True)
-    provider = ma.fields.Str(required=True)
-    qpu = ma.fields.Str(required=True)
-    credentials = ma.fields.Dict(
-        keys=ma.fields.Str(), values=ma.fields.Str(), required=True
-    )
-    shots = ma.fields.Int(required=False)
-    noise_model = ma.fields.Str(required=False)
-    only_measurement_errors = ma.fields.Boolean(required=False)
+    method = ma.fields.Str(required=True, default='automatic')
+    max_subcircuit_width = ma.fields.Int(required=False)
+    max_cuts = ma.fields.Int(required=False)
+    num_subcircuits = ma.fields.List(ma.fields.Int, required=False)
+    subcircuit_vertices = ma.fields.List(ma.fields.List(ma.fields.Int), required=False)
 
 
 class CombineResultsRequest:
