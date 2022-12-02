@@ -1,4 +1,6 @@
 import marshmallow as ma
+import numpy as np
+import argschema
 
 
 class CutCircuitsRequest:
@@ -32,31 +34,20 @@ class CutCircuitsRequestSchema(ma.Schema):
 
 class CombineResultsRequest:
     def __init__(
-        self,
-        circuit,
-        provider,
-        qpu,
-        credentials,
-        shots=1000,
-        noise_model=None,
-        only_measurement_errors=False,
+            self,
+            circuit,
+            subcircuit_results,
+            cuts
     ):
         self.circuit = circuit
-        self.provider = provider
-        self.qpu = qpu
-        self.credentials = credentials
-        self.shots = shots
-        self.noise_model = noise_model
-        self.only_measurement_errors = only_measurement_errors
+        self.subcircuit_results = subcircuit_results
+        self.cuts = cuts
 
 
 class CombineResultsRequestSchema(ma.Schema):
     circuit = ma.fields.Str(required=True)
-    provider = ma.fields.Str(required=True)
-    qpu = ma.fields.Str(required=True)
-    credentials = ma.fields.Dict(
-        keys=ma.fields.Str(), values=ma.fields.Str(), required=True
-    )
-    shots = ma.fields.Int(required=False)
-    noise_model = ma.fields.Str(required=False)
-    only_measurement_errors = ma.fields.Boolean(required=False)
+    subcircuit_results = ma.fields.Dict(required=True,
+                                        keys=ma.fields.Int(),
+                                        values=ma.fields.Dict(keys=ma.fields.Int(),
+                                                              values=argschema.fields.NumpyArray(dtype=np.float)))
+    cuts = ma.fields.Dict(required=True)
