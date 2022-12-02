@@ -18,7 +18,7 @@
 # ******************************************************************************
 import threading
 
-from app import circuit_executor
+from app import circuit_cutter, circuit_executor
 from flask import abort, request
 from flask_smorest import Blueprint
 from app.model.cutting_request import (
@@ -33,7 +33,6 @@ from app.model.cutting_response import (
     CutCircuitsResponseSchema,
     CutCircuitsResponse,
 )
-
 
 blp = Blueprint(
     "cutting",
@@ -57,7 +56,9 @@ blp = Blueprint(
 def execute_circuit(json: CutCircuitsRequest):
     """Execute a given quantum circuit on a specified quantum computer."""
     print("request", json)
-    return circuit_executor.execute_circuit(json)
+    result = circuit_cutter.cut_circuit(json)
+    print("result", result)
+    return result
 
 
 @blp.route("/combineResults", methods=["POST"])
