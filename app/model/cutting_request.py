@@ -5,14 +5,14 @@ import argschema
 
 class CutCircuitsRequest:
     def __init__(
-        self,
-        circuit,
-        provider,
-        qpu,
-        credentials,
-        shots=1000,
-        noise_model=None,
-        only_measurement_errors=False,
+            self,
+            circuit,
+            provider,
+            qpu,
+            credentials,
+            shots=1000,
+            noise_model=None,
+            only_measurement_errors=False,
     ):
         self.circuit = circuit
         self.provider = provider
@@ -50,4 +50,14 @@ class CombineResultsRequestSchema(ma.Schema):
                                         keys=ma.fields.Int(),
                                         values=ma.fields.Dict(keys=ma.fields.Int(),
                                                               values=argschema.fields.NumpyArray(dtype=np.float)))
+    cuts = ma.fields.Dict(required=True)
+
+
+class CombineResultsRequestQuokkaSchema(ma.Schema):
+    circuit = ma.fields.Str(required=True)
+    subcircuit_results = ma.fields.Dict(required=True,
+                                        keys=ma.fields.Int(),
+                                        values=ma.fields.Dict(keys=ma.fields.Int(),
+                                                              values=ma.fields.Dict(keys=ma.fields.Str(),
+                                                                                    values=ma.fields.Float())))
     cuts = ma.fields.Dict(required=True)

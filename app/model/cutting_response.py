@@ -50,3 +50,7 @@ class CombineResultsResponse:
 
 class CombineResultsResponseSchema(ma.Schema):
     result = argschema.fields.NumpyArray(dtype=np.float)
+
+
+class CombineResultsResponseQuokkaSchema(ma.Schema):
+    result = ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Float())

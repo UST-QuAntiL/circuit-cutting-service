@@ -10,3 +10,6 @@ click==8.0.1
 marshmallow==3.13.0
 coverage==5.5
 circuit-knitting-toolbox @ git+https://github.com/Qiskit-Extensions/circuit-knitting-toolbox@98639279f170c7110a57292eeeeb5b29805a3cb0
+numpy~=1.23.5
+argschema~=3.0.4
+jsonpickle~=3.0.0
