@@ -26,7 +26,7 @@ class FlaskClientTestCase(unittest.TestCase):
                     "method": "automatic",
                     "max_subcircuit_width": 3,
                     "num_subcircuits": [2],
-                    "max_cuts": 2
+                    "max_cuts": 2,
                 }
             ),
             content_type="application/json",

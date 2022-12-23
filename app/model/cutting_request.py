@@ -5,59 +5,66 @@ import argschema
 
 class CutCircuitsRequest:
     def __init__(
-            self,
-            circuit,
-            provider,
-            qpu,
-            credentials,
-            shots=1000,
-            noise_model=None,
-            only_measurement_errors=False,
+        self,
+        circuit,
+        method,
+        max_subcircuit_width=500,
+        max_cuts=100,
+        num_subcircuits=None,
+        subcircuit_vertices=None,
+        circuit_format="openqasm2",
     ):
+        if num_subcircuits is None:
+            num_subcircuits = [2]
         self.circuit = circuit
-        self.provider = provider
-        self.qpu = qpu
-        self.credentials = credentials
-        self.shots = shots
-        self.noise_model = noise_model
-        self.only_measurement_errors = only_measurement_errors
+        self.method = method
+        self.max_subcircuit_width = max_subcircuit_width
+        self.max_cuts = max_cuts
+        self.num_subcircuits = num_subcircuits
+        self.subcircuit_vertices = subcircuit_vertices
+        self.circuit_format = circuit_format.lower()
 
 
 class CutCircuitsRequestSchema(ma.Schema):
     circuit = ma.fields.Str(required=True)
-    method = ma.fields.Str(required=True, default='automatic')
+    method = ma.fields.Str(required=True, default="automatic")
     max_subcircuit_width = ma.fields.Int(required=False)
     max_cuts = ma.fields.Int(required=False)
     num_subcircuits = ma.fields.List(ma.fields.Int, required=False)
     subcircuit_vertices = ma.fields.List(ma.fields.List(ma.fields.Int), required=False)
+    circuit_format = ma.fields.String(required=False)
 
 
 class CombineResultsRequest:
-    def __init__(
-            self,
-            circuit,
-            subcircuit_results,
-            cuts
-    ):
+    def __init__(self, circuit, subcircuit_results, cuts, circuit_format="openqasm2"):
         self.circuit = circuit
         self.subcircuit_results = subcircuit_results
         self.cuts = cuts
+        self.circuit_format = circuit_format
 
 
 class CombineResultsRequestSchema(ma.Schema):
     circuit = ma.fields.Str(required=True)
-    subcircuit_results = ma.fields.Dict(required=True,
-                                        keys=ma.fields.Int(),
-                                        values=ma.fields.Dict(keys=ma.fields.Int(),
-                                                              values=argschema.fields.NumpyArray(dtype=np.float)))
+    subcircuit_results = ma.fields.Dict(
+        required=True,
+        keys=ma.fields.Int(),
+        values=ma.fields.Dict(
+            keys=ma.fields.Int(), values=argschema.fields.NumpyArray(dtype=np.float)
+        ),
+    )
     cuts = ma.fields.Dict(required=True)
+    circuit_format = ma.fields.String(required=False)
 
 
 class CombineResultsRequestQuokkaSchema(ma.Schema):
     circuit = ma.fields.Str(required=True)
-    subcircuit_results = ma.fields.Dict(required=True,
-                                        keys=ma.fields.Int(),
-                                        values=ma.fields.Dict(keys=ma.fields.Int(),
-                                                              values=ma.fields.Dict(keys=ma.fields.Str(),
-                                                                                    values=ma.fields.Float())))
+    subcircuit_results = ma.fields.Dict(
+        required=True,
+        keys=ma.fields.Int(),
+        values=ma.fields.Dict(
+            keys=ma.fields.Int(),
+            values=ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Float()),
+        ),
+    )
     cuts = ma.fields.Dict(required=True)
+    circuit_format = ma.fields.String(required=False)

@@ -5,7 +5,7 @@ import numpy as np
 
 def array_to_counts(array: np.ndarray) -> Dict:
     bit_length = int(np.log2(len(array)))
-    format_str = '{0:0' + str(bit_length) + 'b}'
+    format_str = "{0:0" + str(bit_length) + "b}"
     return {format_str.format(i): v for i, v in enumerate(array) if v != 0}
 
 

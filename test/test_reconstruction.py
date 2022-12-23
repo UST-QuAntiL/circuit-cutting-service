@@ -4,7 +4,10 @@ import json
 
 import jsonpickle
 import numpy as np
-from circuit_knitting_toolbox.circuit_cutting.wire_cutting import cut_circuit_wires, evaluate_subcircuits
+from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
+    cut_circuit_wires,
+    evaluate_subcircuits,
+)
 from qiskit.circuit.library import EfficientSU2
 
 from app.utils import array_to_counts
@@ -42,8 +45,8 @@ def generate_su2_test(num_qubits):
     )
     subcircuit_instance_probabilities = evaluate_subcircuits(cuts)
 
-    cuts['subcircuits'] = [sc.qasm() for sc in cuts['subcircuits']]
-    cuts['complete_path_map'] = jsonpickle.encode(cuts['complete_path_map'], keys=True)
+    cuts["subcircuits"] = [sc.qasm() for sc in cuts["subcircuits"]]
+    cuts["complete_path_map"] = jsonpickle.encode(cuts["complete_path_map"], keys=True)
     return circuit, subcircuit_instance_probabilities, cuts
 
 
@@ -74,9 +77,9 @@ class FlaskClientTestCase(unittest.TestCase):
                 {
                     "circuit": circuit.qasm(),
                     "subcircuit_results": subcircuit_instance_probabilities,
-                    "cuts": cuts
+                    "cuts": cuts,
                 },
-                cls=NumpyEncoder
+                cls=NumpyEncoder,
             ),
             content_type="application/json",
         )
@@ -85,16 +88,19 @@ class FlaskClientTestCase(unittest.TestCase):
 
     def test_reconstruction_quokka(self):
         circuit, subcircuit_instance_probabilities, cuts = generate_su2_test(8)
-        subcircuit_instance_probabilities = convert_subcircuit_probabilites(subcircuit_instance_probabilities)
+        subcircuit_instance_probabilities = convert_subcircuit_probabilites(
+            subcircuit_instance_probabilities
+        )
+
         response = self.client.post(
             "/combineResultsQuokka",
             data=json.dumps(
                 {
                     "circuit": circuit.qasm(),
                     "subcircuit_results": subcircuit_instance_probabilities,
-                    "cuts": cuts
+                    "cuts": cuts,
                 },
-                cls=NumpyEncoder
+                cls=NumpyEncoder,
             ),
             content_type="application/json",
         )
