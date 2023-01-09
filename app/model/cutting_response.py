@@ -10,28 +10,36 @@ import marshmallow as ma
 
 class CutCircuitsResponse:
     def __init__(
-        self,
-        max_subcircuit_width,
-        subcircuits,
-        complete_path_map,
-        num_cuts,
-        counter,
-        classical_cost,
-        format,
+            self,
+            max_subcircuit_width,
+            subcircuits,
+            complete_path_map,
+            num_cuts,
+            counter,
+            classical_cost,
+            format,
+            individual_subcircuits,
+            init_meas_subcircuit_map
     ):
         super().__init__()
         self.max_subcircuit_width = max_subcircuit_width
         if format == "openqasm2":
             self.subcircuits = [circ.qasm() for circ in subcircuits]
+            self.individual_subcircuits = [circ.qasm() for circ in individual_subcircuits]
         if format == "qiskit":
             self.subcircuits = [
                 codecs.encode(pickle.dumps(circ), "base64").decode()
                 for circ in subcircuits
             ]
+            self.individual_subcircuits = [
+                codecs.encode(pickle.dumps(circ), "base64").decode()
+                for circ in individual_subcircuits
+            ]
         self.complete_path_map = jsonpickle.encode(complete_path_map, keys=True)
         self.num_cuts = num_cuts
         self.counter = counter
         self.classical_cost = classical_cost
+        self.init_meas_subcircuit_map = jsonpickle.encode(init_meas_subcircuit_map)
 
     def to_json(self):
         json_execution_response = {
@@ -55,6 +63,8 @@ class CutCircuitsResponseSchema(ma.Schema):
         values=ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Int),
     )
     classical_cost = ma.fields.Int()
+    individual_subcircuits = ma.fields.List(ma.fields.Str())
+    init_meas_subcircuit_map = ma.fields.Str()
 
 
 class CombineResultsResponse:

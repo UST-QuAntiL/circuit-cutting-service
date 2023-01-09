@@ -4,13 +4,51 @@ import pickle
 import jsonpickle
 from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
     cut_circuit_wires,
-    reconstruct_full_distribution,
+    reconstruct_full_distribution, generate_summation_terms,
 )
+from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import modify_subcircuit_instance, \
+    mutate_measurement_basis
 from qiskit import QuantumCircuit
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
 from app.model.cutting_response import CutCircuitsResponse, CombineResultsResponse
 from app.utils import array_to_counts, counts_to_array
+
+
+def _create_individual_subcircuits(subcircuits, complete_path_map, num_cuts):
+    summation_terms, subcircuit_entries, subcircuit_instances = generate_summation_terms(subcircuits,
+                                                                                         complete_path_map,
+                                                                                         num_cuts)
+    individual_subcircuits = []
+    init_meas_subcircuit_map = {}
+
+    for subcircuit_idx, subcircuit in enumerate(subcircuits):
+        _init_meas_subcircuit_map = {}
+        subcircuit_instance = subcircuit_instances[subcircuit_idx]
+        subcircuit_idx_set = set()
+        for init_meas, subcircuit_instance_idx in subcircuit_instance.items():
+            if subcircuit_instance_idx not in subcircuit_idx_set:
+                modified_subcircuit_instance = modify_subcircuit_instance(
+                    subcircuit=subcircuit,
+                    init=init_meas[0],
+                    meas=tuple(init_meas[1]),
+                )
+                i = len(individual_subcircuits)
+                individual_subcircuits.append(modified_subcircuit_instance)
+                _init_meas_subcircuit_map[init_meas] = i
+                subcircuit_idx_set.add(subcircuit_instance_idx)
+                mutated_meas = mutate_measurement_basis(meas=tuple(init_meas[1]))
+                for meas in mutated_meas:
+                    key = (init_meas[0], meas)
+                    mutated_subcircuit_instance_idx = subcircuit_instance[
+                        key
+                    ]
+                    subcircuit_idx_set.add(mutated_subcircuit_instance_idx)
+                    _init_meas_subcircuit_map[key] = i
+
+        init_meas_subcircuit_map[subcircuit_idx] = _init_meas_subcircuit_map
+
+    return individual_subcircuits, init_meas_subcircuit_map
 
 
 def cut_circuit(cuttingRequest: CutCircuitsRequest):
@@ -41,6 +79,12 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
             method=cuttingRequest.method,
             subcircuit_vertices=cuttingRequest.subcircuit_vertices,
         )
+    individual_subcircuits, init_meas_subcircuit_map = _create_individual_subcircuits(res['subcircuits'],
+                                                                                      res['complete_path_map'],
+                                                                                      res['num_cuts'])
+
+    res['individual_subcircuits'] = individual_subcircuits
+    res['init_meas_subcircuit_map'] = init_meas_subcircuit_map
 
     return CutCircuitsResponse(format=cuttingRequest.circuit_format, **res)
 
