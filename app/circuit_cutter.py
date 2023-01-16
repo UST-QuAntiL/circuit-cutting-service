@@ -7,7 +7,7 @@ from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
     reconstruct_full_distribution, generate_summation_terms,
 )
 from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import modify_subcircuit_instance, \
-    mutate_measurement_basis
+    mutate_measurement_basis, measure_prob
 from qiskit import QuantumCircuit
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
@@ -97,6 +97,10 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
                 QuantumCircuit.from_qasm_str(qasm)
                 for qasm in input_dict.cuts["subcircuits"]
             ]
+            input_dict.cuts["individual_subcircuits"] = [
+                QuantumCircuit.from_qasm_str(qasm)
+                for qasm in input_dict.cuts["individual_subcircuits"]
+            ]
         except Exception as e:
             return "Provided invalid OpenQASM 2.0 string"
     elif input_dict.circuit_format == "qiskit":
@@ -105,6 +109,10 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
             QuantumCircuit.from_qasm_str(qasm)
             for qasm in input_dict.cuts["subcircuits"]
         ]
+        input_dict.cuts["individual_subcircuits"] = [
+            QuantumCircuit.from_qasm_str(qasm)
+            for qasm in input_dict.cuts["individual_subcircuits"]
+        ]
     else:
         return 'format must be "openqasm2" or "qiskit"'
 
@@ -112,17 +120,22 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
         input_dict.cuts["complete_path_map"] = jsonpickle.decode(
             input_dict.cuts["complete_path_map"], keys=True
         )
+        input_dict.cuts["init_meas_subcircuit_map"] = jsonpickle.decode(
+            input_dict.cuts["init_meas_subcircuit_map"], keys=True
+        )
     except Exception as e:
         # TODO refine exception
         return "The quantum circuit has to be provided as an OpenQASM 2.0 String"
 
-    if quokka_format:
-        input_dict.subcircuit_results = convert_subcircuit_results(
-            input_dict.subcircuit_results, input_dict.cuts["subcircuits"]
-        )
+    subcircuit_results = process_subcircuit_results(input_dict.subcircuit_results,
+                                                    input_dict.cuts["init_meas_subcircuit_map"],
+                                                    input_dict.cuts["subcircuits"],
+                                                    input_dict.cuts["complete_path_map"],
+                                                    input_dict.cuts["num_cuts"],
+                                                    quokka_format)
 
     res = reconstruct_full_distribution(
-        circuit, input_dict.subcircuit_results, input_dict.cuts
+        circuit, subcircuit_results, input_dict.cuts
     )
     if quokka_format:
         res = array_to_counts(res)
@@ -139,3 +152,23 @@ def convert_subcircuit_results(subcircuit_results, subcircuits):
                 counts_dict, subcircuits[circ_fragment].num_qubits
             )
     return converted_result
+
+
+def process_subcircuit_results(subcircuit_results, init_meas_subcircuit_map, subcircuits, complete_path_map, num_cuts,
+                               quokka_format=False):
+    summation_terms, subcircuit_entries, subcircuit_instances = generate_summation_terms(subcircuits,
+                                                                                         complete_path_map,
+                                                                                         num_cuts)
+
+    results = {}
+    for circuit_fragment_idx, circuit_fragment in enumerate(subcircuits):
+        subcircuit_instance = subcircuit_instances[circuit_fragment_idx]
+        fragment_results = []
+        for init_meas, subcircuit_instance_idx in subcircuit_instance.items():
+            res = subcircuit_results[init_meas_subcircuit_map[circuit_fragment_idx][init_meas]]
+            if quokka_format:
+                res = counts_to_array(res, circuit_fragment.num_qubits)
+            measured_prob = measure_prob(unmeasured_prob=res, meas=init_meas[1])
+            fragment_results.append(measured_prob)
+        results[circuit_fragment_idx] = fragment_results
+    return results
