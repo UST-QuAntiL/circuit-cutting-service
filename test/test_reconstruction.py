@@ -102,7 +102,7 @@ class FlaskClientTestCase(unittest.TestCase):
         self.assertTrue((expected == np.array(response.get_json()['result'])).all())
 
     def test_reconstruction_quokka(self):
-        circuit, subcircuit_instance_probabilities, cuts = generate_su2_test(8)
+        circuit, subcircuit_instance_probabilities, cuts, expected = generate_su2_test(8)
         subcircuit_instance_probabilities = convert_subcircuit_probabilites(
             subcircuit_instance_probabilities
         )
