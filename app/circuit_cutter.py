@@ -4,10 +4,14 @@ import pickle
 import jsonpickle
 from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
     cut_circuit_wires,
-    reconstruct_full_distribution, generate_summation_terms,
+    reconstruct_full_distribution,
+    generate_summation_terms,
 )
-from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import modify_subcircuit_instance, \
-    mutate_measurement_basis, measure_prob
+from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import (
+    modify_subcircuit_instance,
+    mutate_measurement_basis,
+    measure_prob,
+)
 from qiskit import QuantumCircuit
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
@@ -16,9 +20,11 @@ from app.utils import array_to_counts, counts_to_array
 
 
 def _create_individual_subcircuits(subcircuits, complete_path_map, num_cuts):
-    summation_terms, subcircuit_entries, subcircuit_instances = generate_summation_terms(subcircuits,
-                                                                                         complete_path_map,
-                                                                                         num_cuts)
+    (
+        summation_terms,
+        subcircuit_entries,
+        subcircuit_instances,
+    ) = generate_summation_terms(subcircuits, complete_path_map, num_cuts)
     individual_subcircuits = []
     init_meas_subcircuit_map = {}
 
@@ -40,9 +46,7 @@ def _create_individual_subcircuits(subcircuits, complete_path_map, num_cuts):
                 mutated_meas = mutate_measurement_basis(meas=tuple(init_meas[1]))
                 for meas in mutated_meas:
                     key = (init_meas[0], meas)
-                    mutated_subcircuit_instance_idx = subcircuit_instance[
-                        key
-                    ]
+                    mutated_subcircuit_instance_idx = subcircuit_instance[key]
                     subcircuit_idx_set.add(mutated_subcircuit_instance_idx)
                     _init_meas_subcircuit_map[key] = i
 
@@ -79,12 +83,12 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
             method=cuttingRequest.method,
             subcircuit_vertices=cuttingRequest.subcircuit_vertices,
         )
-    individual_subcircuits, init_meas_subcircuit_map = _create_individual_subcircuits(res['subcircuits'],
-                                                                                      res['complete_path_map'],
-                                                                                      res['num_cuts'])
+    individual_subcircuits, init_meas_subcircuit_map = _create_individual_subcircuits(
+        res["subcircuits"], res["complete_path_map"], res["num_cuts"]
+    )
 
-    res['individual_subcircuits'] = individual_subcircuits
-    res['init_meas_subcircuit_map'] = init_meas_subcircuit_map
+    res["individual_subcircuits"] = individual_subcircuits
+    res["init_meas_subcircuit_map"] = init_meas_subcircuit_map
 
     return CutCircuitsResponse(format=cuttingRequest.circuit_format, **res)
 
@@ -127,16 +131,16 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
         # TODO refine exception
         return "The quantum circuit has to be provided as an OpenQASM 2.0 String"
 
-    subcircuit_results = process_subcircuit_results(input_dict.subcircuit_results,
-                                                    input_dict.cuts["init_meas_subcircuit_map"],
-                                                    input_dict.cuts["subcircuits"],
-                                                    input_dict.cuts["complete_path_map"],
-                                                    input_dict.cuts["num_cuts"],
-                                                    quokka_format)
-
-    res = reconstruct_full_distribution(
-        circuit, subcircuit_results, input_dict.cuts
+    subcircuit_results = process_subcircuit_results(
+        input_dict.subcircuit_results,
+        input_dict.cuts["init_meas_subcircuit_map"],
+        input_dict.cuts["subcircuits"],
+        input_dict.cuts["complete_path_map"],
+        input_dict.cuts["num_cuts"],
+        quokka_format,
     )
+
+    res = reconstruct_full_distribution(circuit, subcircuit_results, input_dict.cuts)
     if quokka_format:
         res = array_to_counts(res)
 
@@ -154,18 +158,28 @@ def convert_subcircuit_results(subcircuit_results, subcircuits):
     return converted_result
 
 
-def process_subcircuit_results(subcircuit_results, init_meas_subcircuit_map, subcircuits, complete_path_map, num_cuts,
-                               quokka_format=False):
-    summation_terms, subcircuit_entries, subcircuit_instances = generate_summation_terms(subcircuits,
-                                                                                         complete_path_map,
-                                                                                         num_cuts)
+def process_subcircuit_results(
+    subcircuit_results,
+    init_meas_subcircuit_map,
+    subcircuits,
+    complete_path_map,
+    num_cuts,
+    quokka_format=False,
+):
+    (
+        summation_terms,
+        subcircuit_entries,
+        subcircuit_instances,
+    ) = generate_summation_terms(subcircuits, complete_path_map, num_cuts)
 
     results = {}
     for circuit_fragment_idx, circuit_fragment in enumerate(subcircuits):
         subcircuit_instance = subcircuit_instances[circuit_fragment_idx]
         fragment_results = []
         for init_meas, subcircuit_instance_idx in subcircuit_instance.items():
-            res = subcircuit_results[init_meas_subcircuit_map[circuit_fragment_idx][init_meas]]
+            res = subcircuit_results[
+                init_meas_subcircuit_map[circuit_fragment_idx][init_meas]
+            ]
             if quokka_format:
                 res = counts_to_array(res, circuit_fragment.num_qubits)
             measured_prob = measure_prob(unmeasured_prob=res, meas=init_meas[1])

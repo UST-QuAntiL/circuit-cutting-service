@@ -6,9 +6,12 @@ import jsonpickle
 import numpy as np
 from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
     cut_circuit_wires,
-    evaluate_subcircuits, reconstruct_full_distribution,
+    evaluate_subcircuits,
+    reconstruct_full_distribution,
 )
-from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import run_subcircuits
+from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import (
+    run_subcircuits,
+)
 from qiskit.circuit.library import EfficientSU2
 
 from app.circuit_cutter import _create_individual_subcircuits
@@ -46,17 +49,21 @@ def generate_su2_test(num_qubits):
         num_subcircuits=[2],
     )
     subcircuit_instance_probs_test = evaluate_subcircuits(cuts)
-    expected = reconstruct_full_distribution(circuit, subcircuit_instance_probs_test, cuts)
-    individual_subcircuits, init_meas_subcircuit_map = _create_individual_subcircuits(cuts["subcircuits"],
-                                                                                      cuts["complete_path_map"],
-                                                                                      cuts["num_cuts"])
+    expected = reconstruct_full_distribution(
+        circuit, subcircuit_instance_probs_test, cuts
+    )
+    individual_subcircuits, init_meas_subcircuit_map = _create_individual_subcircuits(
+        cuts["subcircuits"], cuts["complete_path_map"], cuts["num_cuts"]
+    )
 
     subcircuit_instance_probabilities = run_subcircuits(individual_subcircuits)
 
     cuts["subcircuits"] = [sc.qasm() for sc in cuts["subcircuits"]]
     cuts["complete_path_map"] = jsonpickle.encode(cuts["complete_path_map"], keys=True)
-    cuts['individual_subcircuits'] = [sc.qasm() for sc in individual_subcircuits]
-    cuts['init_meas_subcircuit_map'] = jsonpickle.encode(init_meas_subcircuit_map, keys=True)
+    cuts["individual_subcircuits"] = [sc.qasm() for sc in individual_subcircuits]
+    cuts["init_meas_subcircuit_map"] = jsonpickle.encode(
+        init_meas_subcircuit_map, keys=True
+    )
     return circuit, subcircuit_instance_probabilities, cuts, expected
 
 
@@ -69,7 +76,9 @@ def convert_subcircuit_probabilites(subcircuit_probabilities):
                 converted_result[circ_fragment][sub_circ] = array_to_counts(probability)
         return converted_result
     else:
-        return [array_to_counts(probability) for probability in subcircuit_probabilities]
+        return [
+            array_to_counts(probability) for probability in subcircuit_probabilities
+        ]
 
 
 class FlaskClientTestCase(unittest.TestCase):
@@ -83,7 +92,9 @@ class FlaskClientTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def test_reconstruction(self):
-        circuit, subcircuit_instance_probabilities, cuts, expected = generate_su2_test(8)
+        circuit, subcircuit_instance_probabilities, cuts, expected = generate_su2_test(
+            8
+        )
         print(expected)
         response = self.client.post(
             "/combineResults",
@@ -99,10 +110,12 @@ class FlaskClientTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         print(response.get_json())
-        self.assertTrue((expected == np.array(response.get_json()['result'])).all())
+        self.assertTrue((expected == np.array(response.get_json()["result"])).all())
 
     def test_reconstruction_quokka(self):
-        circuit, subcircuit_instance_probabilities, cuts, expected = generate_su2_test(8)
+        circuit, subcircuit_instance_probabilities, cuts, expected = generate_su2_test(
+            8
+        )
         subcircuit_instance_probabilities = convert_subcircuit_probabilites(
             subcircuit_instance_probabilities
         )

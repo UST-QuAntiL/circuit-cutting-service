@@ -10,22 +10,24 @@ import marshmallow as ma
 
 class CutCircuitsResponse:
     def __init__(
-            self,
-            max_subcircuit_width,
-            subcircuits,
-            complete_path_map,
-            num_cuts,
-            counter,
-            classical_cost,
-            format,
-            individual_subcircuits,
-            init_meas_subcircuit_map
+        self,
+        max_subcircuit_width,
+        subcircuits,
+        complete_path_map,
+        num_cuts,
+        counter,
+        classical_cost,
+        format,
+        individual_subcircuits,
+        init_meas_subcircuit_map,
     ):
         super().__init__()
         self.max_subcircuit_width = max_subcircuit_width
         if format == "openqasm2":
             self.subcircuits = [circ.qasm() for circ in subcircuits]
-            self.individual_subcircuits = [circ.qasm() for circ in individual_subcircuits]
+            self.individual_subcircuits = [
+                circ.qasm() for circ in individual_subcircuits
+            ]
         if format == "qiskit":
             self.subcircuits = [
                 codecs.encode(pickle.dumps(circ), "base64").decode()
