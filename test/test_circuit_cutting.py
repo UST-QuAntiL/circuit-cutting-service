@@ -27,7 +27,7 @@ class FlaskClientTestCase(unittest.TestCase):
                     "max_subcircuit_width": 3,
                     "num_subcircuits": [2],
                     "max_cuts": 2,
-                    "circuit_format": "openqasm2"
+                    "circuit_format": "openqasm2",
                 }
             ),
             content_type="application/json",
