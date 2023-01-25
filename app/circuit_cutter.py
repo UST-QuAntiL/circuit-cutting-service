@@ -178,7 +178,7 @@ def process_subcircuit_results(
         fragment_results = []
         for init_meas, subcircuit_instance_idx in subcircuit_instance.items():
             res = subcircuit_results[
-                init_meas_subcircuit_map[circuit_fragment_idx][init_meas]
+                init_meas_subcircuit_map[str(circuit_fragment_idx)][init_meas]
             ]
             if quokka_format:
                 res = counts_to_array(res, circuit_fragment.num_qubits)

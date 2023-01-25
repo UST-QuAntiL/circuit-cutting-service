@@ -1,3 +1,4 @@
+import time
 import unittest
 import os, sys
 import json
@@ -12,7 +13,11 @@ from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
 from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import (
     run_subcircuits,
 )
+from qiskit import QuantumCircuit, assemble, transpile
 from qiskit.circuit.library import EfficientSU2
+from qiskit.providers import JobError, JobTimeoutError
+from qiskit.providers.jobstatus import JOB_FINAL_STATES
+from qiskit_aer import AerSimulator
 
 from app.circuit_cutter import _create_individual_subcircuits
 from app.utils import array_to_counts
@@ -134,3 +139,73 @@ class FlaskClientTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         print(response.get_json())
+
+    def test_based_on_cutting_request(self):
+        cutting_response_json = {'classical_cost': 64,
+         'complete_path_map': '{"json://{\\"py/object\\": \\"qiskit.circuit.quantumregister.Qubit\\", \\"_index\\": 0, \\"_register\\": {\\"py/object\\": \\"qiskit.circuit.quantumregister.QuantumRegister\\", \\"py/state\\": {\\"py/tuple\\": [\\"q\\", 4, -6491360347166058145, \\"QuantumRegister(4, \'q\')\\", [{\\"py/id\\": 1}, {\\"py/object\\": \\"qiskit.circuit.quantumregister.Qubit\\", \\"_index\\": 1, \\"_register\\": {\\"py/id\\": 2}, \\"_hash\\": -1236161107715967576, \\"_repr\\": \\"Qubit(QuantumRegister(4, \'q\'), 1)\\"}, {\\"py/object\\": \\"qiskit.circuit.quantumregister.Qubit\\", \\"_index\\": 2, \\"_register\\": {\\"py/id\\": 2}, \\"_hash\\": -6129235136688663942, \\"_repr\\": \\"Qubit(QuantumRegister(4, \'q\'), 2)\\"}, {\\"py/object\\": \\"qiskit.circuit.quantumregister.Qubit\\", \\"_index\\": 3, \\"_register\\": {\\"py/id\\": 2}, \\"_hash\\": 378405619413334483, \\"_repr\\": \\"Qubit(QuantumRegister(4, \'q\'), 3)\\"}]]}}, \\"_hash\\": -3345444480833597873, \\"_repr\\": \\"Qubit(QuantumRegister(4, \'q\'), 0)\\"}": [{"subcircuit_idx": 0, "subcircuit_qubit": {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 0, "_register": {"py/object": "qiskit.circuit.quantumregister.QuantumRegister", "py/state": {"py/tuple": ["q", 3, 2800071064791006349, "QuantumRegister(3, \'q\')", [{"py/id": 9}, {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 1, "_register": {"py/id": 10}, "_hash": -199321695443646933, "_repr": "Qubit(QuantumRegister(3, \'q\'), 1)"}, {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 2, "_register": {"py/id": 10}, "_hash": -5092395724416343299, "_repr": "Qubit(QuantumRegister(3, \'q\'), 2)"}]]}}, "_hash": -2308605068561277230, "_repr": "Qubit(QuantumRegister(3, \'q\'), 0)"}}], "json://{\\"py/id\\": 4}": [{"subcircuit_idx": 0, "subcircuit_qubit": {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 1, "_register": {"py/object": "qiskit.circuit.quantumregister.QuantumRegister", "py/state": {"py/tuple": ["q", 3, 2800071064791006349, "QuantumRegister(3, \'q\')", [{"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 0, "_register": {"py/id": 17}, "_hash": -2308605068561277230, "_repr": "Qubit(QuantumRegister(3, \'q\'), 0)"}, {"py/id": 16}, {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 2, "_register": {"py/id": 17}, "_hash": -5092395724416343299, "_repr": "Qubit(QuantumRegister(3, \'q\'), 2)"}]]}}, "_hash": -199321695443646933, "_repr": "Qubit(QuantumRegister(3, \'q\'), 1)"}}], "json://{\\"py/id\\": 5}": [{"subcircuit_idx": 0, "subcircuit_qubit": {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 2, "_register": {"py/object": "qiskit.circuit.quantumregister.QuantumRegister", "py/state": {"py/tuple": ["q", 3, 2800071064791006349, "QuantumRegister(3, \'q\')", [{"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 0, "_register": {"py/id": 24}, "_hash": -2308605068561277230, "_repr": "Qubit(QuantumRegister(3, \'q\'), 0)"}, {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 1, "_register": {"py/id": 24}, "_hash": -199321695443646933, "_repr": "Qubit(QuantumRegister(3, \'q\'), 1)"}, {"py/id": 23}]]}}, "_hash": -5092395724416343299, "_repr": "Qubit(QuantumRegister(3, \'q\'), 2)"}}, {"subcircuit_idx": 1, "subcircuit_qubit": {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 0, "_register": {"py/object": "qiskit.circuit.quantumregister.QuantumRegister", "py/state": {"py/tuple": ["q", 2, -3707569691310992076, "QuantumRegister(2, \'q\')", [{"py/id": 29}, {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 1, "_register": {"py/id": 30}, "_hash": -7284043906015339508, "_repr": "Qubit(QuantumRegister(2, \'q\'), 1)"}]]}}, "_hash": 4655059411592213683, "_repr": "Qubit(QuantumRegister(2, \'q\'), 0)"}}], "json://{\\"py/id\\": 6}": [{"subcircuit_idx": 1, "subcircuit_qubit": {"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 1, "_register": {"py/object": "qiskit.circuit.quantumregister.QuantumRegister", "py/state": {"py/tuple": ["q", 2, -3707569691310992076, "QuantumRegister(2, \'q\')", [{"py/object": "qiskit.circuit.quantumregister.Qubit", "_index": 0, "_register": {"py/id": 36}, "_hash": 4655059411592213683, "_repr": "Qubit(QuantumRegister(2, \'q\'), 0)"}, {"py/id": 35}]]}}, "_hash": -7284043906015339508, "_repr": "Qubit(QuantumRegister(2, \'q\'), 1)"}}]}',
+         'counter': {'0': {'O': 1, 'd': 3, 'depth': 3, 'effective': 2, 'rho': 0, 'size': 3},
+                     '1': {'O': 0, 'd': 2, 'depth': 1, 'effective': 2, 'rho': 1, 'size': 1}},
+         'individual_subcircuits': [
+             'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[3];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\n',
+             'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[3];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\nh q[2];\n',
+             'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[3];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\nsdg q[2];\nh q[2];\n',
+             'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncx q[0],q[1];\n',
+             'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nx q[0];\ncx q[0],q[1];\n',
+             'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ncx q[0],q[1];\n',
+             'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\ns q[0];\ncx q[0],q[1];\n'],
+         'init_meas_subcircuit_map': '{"0": {"((\'zero\', \'zero\', \'zero\'), (\'comp\', \'comp\', \'I\'))": 0, "((\'zero\', \'zero\', \'zero\'), (\'comp\', \'comp\', \'Z\'))": 0, "((\'zero\', \'zero\', \'zero\'), (\'comp\', \'comp\', \'X\'))": 1, "((\'zero\', \'zero\', \'zero\'), (\'comp\', \'comp\', \'Y\'))": 2}, "1": {"((\'zero\', \'zero\'), (\'comp\', \'comp\'))": 3, "((\'one\', \'zero\'), (\'comp\', \'comp\'))": 4, "((\'plus\', \'zero\'), (\'comp\', \'comp\'))": 5, "((\'plusI\', \'zero\'), (\'comp\', \'comp\'))": 6}}',
+         'max_subcircuit_width': 3, 'num_cuts': 1,
+         'subcircuits': ['OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[3];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\n',
+                         'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncx q[0],q[1];\n']}
+
+        circuits = [QuantumCircuit.from_qasm_str(circ_string) for circ_string in cutting_response_json['individual_subcircuits']]
+        [circ.measure_all() for circ in circuits]
+        ibm_qpu = AerSimulator()
+        transpiled_circuits = [transpile(c, backend=ibm_qpu) for c in circuits]
+
+        def execute(transpiled_circuit, shots, backend):
+            """Execute the quantum circuit."""
+            try:
+                job = backend.run(assemble(transpiled_circuit, shots=shots))
+                sleep_timer = 0.5
+                job_status = job.status()
+                while job_status not in JOB_FINAL_STATES:
+                    print("The execution is still running")
+                    time.sleep(sleep_timer)
+                    job_status = job.status()
+                    if sleep_timer < 10:
+                        sleep_timer = sleep_timer + 1
+
+                return job.result().get_counts()
+            except (JobError, JobTimeoutError):
+                return None
+
+        exec_results = execute(transpiled_circuits, 1000, ibm_qpu)
+        print(exec_results)
+
+        response = self.client.post(
+            "/combineResultsQuokka",
+            data=json.dumps(
+                {
+                    "circuit": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[4];\ncreg meas[4];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[2],q[3];\nbarrier q[0],q[1],q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\n',
+                    "subcircuit_results": exec_results,
+
+                    "cuts": {
+                        "individual_subcircuits": cutting_response_json['individual_subcircuits'],
+                        "subcircuits": cutting_response_json['subcircuits'],
+                        "complete_path_map": cutting_response_json['complete_path_map'],
+                        "init_meas_subcircuit_map": cutting_response_json['init_meas_subcircuit_map'],
+                        "num_cuts": cutting_response_json['num_cuts'],
+
+                    },
+                    "circuit_format": "openqasm2"
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        print(response.get_json())
+
+
+
+

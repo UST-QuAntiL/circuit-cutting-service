@@ -46,12 +46,13 @@ blp = Blueprint(
 @blp.route("/cutCircuits", methods=["POST"])
 @blp.arguments(
     CutCircuitsRequestSchema,
-    example=dict(
-        circuit='OPENQASM 2.0; include "qelib1.inc"; qreg q[4]; creg c[4];x q[0]; x q[2];barrier q;h q[0];cu1(pi/2) q[1],q[0];h q[1];cu1(pi/4) q[2],q[0];cu1(pi/2) q[2],q[1];h q[2];cu1(pi/8) q[3],q[0];cu1(pi/4) q[3],q[1];cu1(pi/2) q[3],q[2];h q[3];measure q -> c;',
-        method="automatic",
-        max_subcircuit_width="155",
-        max_cuts="20",
-    ),
+    example={ "circuit": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[4];\ncreg meas[4];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[2],q[3];\nbarrier q[0],q[1],q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\n",
+              "method": "automatic",
+              "max_subcircuit_width": 3,
+              "num_subcircuits": [2],
+              "max_cuts": 2,
+              "circuit_format": "openqasm2"
+    },
 )
 @blp.response(200, CutCircuitsResponseSchema)
 def cut_circuit(json: dict):
