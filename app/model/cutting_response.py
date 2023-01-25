@@ -41,7 +41,7 @@ class CutCircuitsResponse:
         self.num_cuts = num_cuts
         self.counter = counter
         self.classical_cost = classical_cost
-        self.init_meas_subcircuit_map = jsonpickle.encode(init_meas_subcircuit_map)
+        self.init_meas_subcircuit_map = jsonpickle.encode(init_meas_subcircuit_map, keys=True)
 
     def to_json(self):
         json_execution_response = {
