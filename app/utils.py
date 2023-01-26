@@ -25,3 +25,7 @@ def counts_to_array(counts_dict: Dict, n_qubits: int) -> np.ndarray:
             raise TypeError("Type has to be either integer or string")
         array[key] = value
     return array
+
+
+def normalize_array(array: np.ndarray) -> np.ndarray:
+    return array / np.sum(array)

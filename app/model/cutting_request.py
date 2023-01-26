@@ -36,11 +36,21 @@ class CutCircuitsRequestSchema(ma.Schema):
 
 
 class CombineResultsRequest:
-    def __init__(self, circuit, subcircuit_results, cuts, circuit_format="openqasm2"):
+    def __init__(
+        self,
+        circuit,
+        subcircuit_results,
+        cuts,
+        circuit_format="openqasm2",
+        unnormalized_results=False,
+        shot_scaling_factor=None,
+    ):
         self.circuit = circuit
         self.subcircuit_results = subcircuit_results
         self.cuts = cuts
         self.circuit_format = circuit_format
+        self.unnormalized_results = unnormalized_results
+        self.shot_scaling_factor = shot_scaling_factor
 
 
 class CombineResultsRequestSchema(ma.Schema):
@@ -50,6 +60,8 @@ class CombineResultsRequestSchema(ma.Schema):
     )
     cuts = ma.fields.Dict(required=True)
     circuit_format = ma.fields.String(required=False)
+    unnormalized_results = ma.fields.Boolean(required=False)
+    shot_scaling_factor = ma.fields.Int(required=False)
 
 
 class CombineResultsRequestQuokkaSchema(ma.Schema):
@@ -59,3 +71,5 @@ class CombineResultsRequestQuokkaSchema(ma.Schema):
     )
     cuts = ma.fields.Dict(required=True)
     circuit_format = ma.fields.String(required=False)
+    unnormalized_results = ma.fields.Boolean(required=False)
+    shot_scaling_factor = ma.fields.Int(required=False)

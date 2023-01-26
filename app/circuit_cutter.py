@@ -16,7 +16,7 @@ from qiskit import QuantumCircuit
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
 from app.model.cutting_response import CutCircuitsResponse, CombineResultsResponse
-from app.utils import array_to_counts, counts_to_array
+from app.utils import array_to_counts, counts_to_array, normalize_array
 
 
 def _create_individual_subcircuits(subcircuits, complete_path_map, num_cuts):
@@ -131,6 +131,8 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
         # TODO refine exception
         return "The quantum circuit has to be provided as an OpenQASM 2.0 String"
 
+    normalize = input_dict.unnormalized_results
+
     subcircuit_results = process_subcircuit_results(
         input_dict.subcircuit_results,
         input_dict.cuts["init_meas_subcircuit_map"],
@@ -138,9 +140,13 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
         input_dict.cuts["complete_path_map"],
         input_dict.cuts["num_cuts"],
         quokka_format,
+        normalize,
     )
 
     res = reconstruct_full_distribution(circuit, subcircuit_results, input_dict.cuts)
+    if input_dict.shot_scaling_factor is not None:
+        res = res * input_dict.shot_scaling_factor
+
     if quokka_format:
         res = array_to_counts(res)
 
@@ -165,6 +171,7 @@ def process_subcircuit_results(
     complete_path_map,
     num_cuts,
     quokka_format=False,
+    normalize=False,
 ):
     (
         summation_terms,
@@ -182,6 +189,8 @@ def process_subcircuit_results(
             ]
             if quokka_format:
                 res = counts_to_array(res, circuit_fragment.num_qubits)
+            if normalize:
+                res = normalize_array(res)
             measured_prob = measure_prob(unmeasured_prob=res, meas=init_meas[1])
             fragment_results.append(measured_prob)
         results[circuit_fragment_idx] = fragment_results

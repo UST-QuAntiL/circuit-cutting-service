@@ -212,6 +212,8 @@ class FlaskClientTestCase(unittest.TestCase):
                         "num_cuts": cutting_response_json["num_cuts"],
                     },
                     "circuit_format": "openqasm2",
+                    "unnormalized_results": "True",
+                    "shot_scaling_factor": 100,
                 }
             ),
             content_type="application/json",
