@@ -87,6 +87,8 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
         res["subcircuits"], res["complete_path_map"], res["num_cuts"]
     )
 
+    for individual_subcircuit in individual_subcircuits:
+        individual_subcircuit.measure_all()
     res["individual_subcircuits"] = individual_subcircuits
     res["init_meas_subcircuit_map"] = init_meas_subcircuit_map
 
@@ -110,12 +112,12 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
     elif input_dict.circuit_format == "qiskit":
         circuit = pickle.loads(codecs.decode(input_dict.circuit.encode(), "base64"))
         input_dict.cuts["subcircuits"] = [
-            QuantumCircuit.from_qasm_str(qasm)
-            for qasm in input_dict.cuts["subcircuits"]
+            pickle.loads(codecs.decode(subcirc.encode(), "base64"))
+            for subcirc in input_dict.cuts["subcircuits"]
         ]
         input_dict.cuts["individual_subcircuits"] = [
-            QuantumCircuit.from_qasm_str(qasm)
-            for qasm in input_dict.cuts["individual_subcircuits"]
+            pickle.loads(codecs.decode(ind_circ.encode(), "base64"))
+            for ind_circ in input_dict.cuts["individual_subcircuits"]
         ]
     else:
         return 'format must be "openqasm2" or "qiskit"'

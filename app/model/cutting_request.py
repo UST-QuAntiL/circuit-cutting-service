@@ -10,17 +10,15 @@ class CutCircuitsRequest:
         method,
         max_subcircuit_width=500,
         max_cuts=100,
-        num_subcircuits=None,
+        max_num_subcircuits=None,
         subcircuit_vertices=None,
         circuit_format="openqasm2",
     ):
-        if num_subcircuits is None:
-            num_subcircuits = [2]
         self.circuit = circuit
         self.method = method
         self.max_subcircuit_width = max_subcircuit_width
         self.max_cuts = max_cuts
-        self.num_subcircuits = num_subcircuits
+        self.num_subcircuits = list(range(2,max_num_subcircuits+1)) if max_num_subcircuits is not None else [2]
         self.subcircuit_vertices = subcircuit_vertices
         self.circuit_format = circuit_format.lower()
 
@@ -30,7 +28,7 @@ class CutCircuitsRequestSchema(ma.Schema):
     method = ma.fields.Str(required=True, default="automatic")
     max_subcircuit_width = ma.fields.Int(required=False)
     max_cuts = ma.fields.Int(required=False)
-    num_subcircuits = ma.fields.List(ma.fields.Int, required=False)
+    max_num_subcircuits = ma.fields.Int(required=False)
     subcircuit_vertices = ma.fields.List(ma.fields.List(ma.fields.Int), required=False)
     circuit_format = ma.fields.String(required=False)
 
