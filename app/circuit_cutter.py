@@ -69,7 +69,8 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
 
     if cuttingRequest.max_subcircuit_width > circuit.num_qubits:
         raise ValueError(
-            f'The subcircuit width ({cuttingRequest.max_subcircuit_width}) is larger than the width of the original circuit ({circuit.num_qubits})')
+            f"The subcircuit width ({cuttingRequest.max_subcircuit_width}) is larger than the width of the original circuit ({circuit.num_qubits})"
+        )
     circuit = RemoveBarriers()(circuit)
     circuit.remove_final_measurements(inplace=True)
 
@@ -171,13 +172,13 @@ def convert_subcircuit_results(subcircuit_results, subcircuits):
 
 
 def process_subcircuit_results(
-        subcircuit_results,
-        init_meas_subcircuit_map,
-        subcircuits,
-        complete_path_map,
-        num_cuts,
-        quokka_format=False,
-        normalize=False,
+    subcircuit_results,
+    init_meas_subcircuit_map,
+    subcircuits,
+    complete_path_map,
+    num_cuts,
+    quokka_format=False,
+    normalize=False,
 ):
     (
         summation_terms,
