@@ -3,7 +3,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-The circuit cutting service enables TODO 
+The circuit cutting service enables the partioning of quantum circuits into smaller sub-circuits, such that circuits whose width exceeds a quantum computers number of qubits can still be executed.
+Moveover, the circuit depth of the sub-circuits is smaller, making them less prone to computational errors.
 
 ## Running the Service
 
@@ -15,14 +16,14 @@ Alternatively, the service can be built manually:
 1. Clone the repository using ``git clone https://github.com/UST-QuAntiL/circuit-cutting-service.git``
 2. Navigate to the corresponding folder within the cloned repository ``cd Quokka/services/circuit-cutting-service``
 3. Build the Docker container: ``docker build -t circuit-cutting-service .``
-4. Run the Docker container: ``docker run -p 5075:5075 circuit-cutting-service``
+4. Run the Docker container: ``docker run -p 5076:5076 circuit-cutting-service``
 
-Then the service can be accessed via: [http://127.0.0.1:5075](http://127.0.0.1:5075).
+Then the service can be accessed via: [http://127.0.0.1:5076](http://127.0.0.1:5076).
 
 ## API Documentation
 
 The circuit cutting service provides a Swagger UI, specifying the request schemas and showcasing exemplary requests for all API endpoints.
- * Swagger UI: [http://127.0.0.1:5075/api/swagger-ui](http://127.0.0.1:5075/api/swagger-ui).
+ * Swagger UI: [http://127.0.0.1:5076/api/swagger-ui](http://127.0.0.1:5076/api/swagger-ui).
 
 ## Developer Guide
 
