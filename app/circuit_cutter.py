@@ -13,6 +13,7 @@ from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluati
     measure_prob,
 )
 from qiskit import QuantumCircuit
+from qiskit.transpiler.passes import RemoveBarriers
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
 from app.model.cutting_response import CutCircuitsResponse, CombineResultsResponse
@@ -66,7 +67,10 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
     else:
         return 'format must be "openqasm2" or "qiskit"'
 
-    print(circuit)
+    if cuttingRequest.max_subcircuit_width > circuit.num_qubits:
+        raise ValueError(
+            f'The subcircuit width ({cuttingRequest.max_subcircuit_width}) is larger than the width of the original circuit ({circuit.num_qubits})')
+    circuit = RemoveBarriers()(circuit)
     circuit.remove_final_measurements(inplace=True)
 
     if cuttingRequest.method == "automatic":
@@ -167,13 +171,13 @@ def convert_subcircuit_results(subcircuit_results, subcircuits):
 
 
 def process_subcircuit_results(
-    subcircuit_results,
-    init_meas_subcircuit_map,
-    subcircuits,
-    complete_path_map,
-    num_cuts,
-    quokka_format=False,
-    normalize=False,
+        subcircuit_results,
+        init_meas_subcircuit_map,
+        subcircuits,
+        complete_path_map,
+        num_cuts,
+        quokka_format=False,
+        normalize=False,
 ):
     (
         summation_terms,
