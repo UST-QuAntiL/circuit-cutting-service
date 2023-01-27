@@ -18,7 +18,11 @@ class CutCircuitsRequest:
         self.method = method
         self.max_subcircuit_width = max_subcircuit_width
         self.max_cuts = max_cuts
-        self.num_subcircuits = list(range(2,max_num_subcircuits+1)) if max_num_subcircuits is not None else [2]
+        self.num_subcircuits = (
+            list(range(2, max_num_subcircuits + 1))
+            if max_num_subcircuits is not None
+            else [2]
+        )
         self.subcircuit_vertices = subcircuit_vertices
         self.circuit_format = circuit_format.lower()
 
