@@ -16,11 +16,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 # ******************************************************************************
-import threading
+
+from flask_smorest import Blueprint
 
 from app import circuit_cutter
-from flask import abort, request
-from flask_smorest import Blueprint
 from app.model.cutting_request import (
     CutCircuitsRequestSchema,
     CutCircuitsRequest,
@@ -29,10 +28,8 @@ from app.model.cutting_request import (
     CombineResultsRequestQuokkaSchema,
 )
 from app.model.cutting_response import (
-    CombineResultsResponse,
     CombineResultsResponseSchema,
     CutCircuitsResponseSchema,
-    CutCircuitsResponse,
     CombineResultsResponseQuokkaSchema,
 )
 
