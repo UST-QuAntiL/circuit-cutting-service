@@ -50,7 +50,7 @@ blp = Blueprint(
         "circuit": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[4];\ncreg meas[4];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[2],q[3];\nbarrier q[0],q[1],q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\n',
         "method": "automatic",
         "max_subcircuit_width": 3,
-        "max_num_subcircuits": [2],
+        "max_num_subcircuits": 2,
         "max_cuts": 2,
         "circuit_format": "openqasm2",
     },
