@@ -177,7 +177,7 @@ class FlaskClientTestCase(unittest.TestCase):
         def execute(transpiled_circuit, shots, backend):
             """Execute the quantum circuit."""
             try:
-                job = backend.run(assemble(transpiled_circuit, shots=shots))
+                job = backend.run(transpiled_circuit, shots=shots)
                 sleep_timer = 0.5
                 job_status = job.status()
                 while job_status not in JOB_FINAL_STATES:
