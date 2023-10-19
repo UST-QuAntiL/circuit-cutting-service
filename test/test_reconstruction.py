@@ -5,12 +5,12 @@ import json
 
 import jsonpickle
 import numpy as np
-from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
+from circuit_knitting.cutting.cutqc import (
     cut_circuit_wires,
     evaluate_subcircuits,
     reconstruct_full_distribution,
 )
-from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import (
+from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
     run_subcircuits,
 )
 from qiskit import QuantumCircuit, assemble, transpile
@@ -177,7 +177,7 @@ class FlaskClientTestCase(unittest.TestCase):
         def execute(transpiled_circuit, shots, backend):
             """Execute the quantum circuit."""
             try:
-                job = backend.run(assemble(transpiled_circuit, shots=shots))
+                job = backend.run(transpiled_circuit, shots=shots)
                 sleep_timer = 0.5
                 job_status = job.status()
                 while job_status not in JOB_FINAL_STATES:
