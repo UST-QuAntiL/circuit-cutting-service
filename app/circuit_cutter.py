@@ -2,12 +2,12 @@ import codecs
 import pickle
 
 import jsonpickle
-from circuit_knitting_toolbox.circuit_cutting.wire_cutting import (
+from circuit_knitting.cutting.cutqc import (
+    generate_summation_terms,
     cut_circuit_wires,
     reconstruct_full_distribution,
-    generate_summation_terms,
 )
-from circuit_knitting_toolbox.circuit_cutting.wire_cutting.wire_cutting_evaluation import (
+from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
     modify_subcircuit_instance,
     mutate_measurement_basis,
     measure_prob,
