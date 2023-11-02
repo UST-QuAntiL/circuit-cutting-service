@@ -2,6 +2,8 @@ import codecs
 import pickle
 
 import jsonpickle
+import numpy as np
+from circuit_knitting.cutting import partition_problem, generate_cutting_experiments
 from circuit_knitting.cutting.cutqc import (
     generate_summation_terms,
     cut_circuit_wires,
@@ -13,10 +15,12 @@ from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
     measure_prob,
 )
 from qiskit import QuantumCircuit
+from qiskit.quantum_info import PauliList
 from qiskit.transpiler.passes import RemoveBarriers
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
 from app.model.cutting_response import CutCircuitsResponse, CombineResultsResponse
+from app.partition import get_partitions, get_partition_labels
 from app.utils import array_to_counts, counts_to_array, normalize_array
 
 
@@ -82,6 +86,14 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
             max_cuts=cuttingRequest.max_cuts,
             num_subcircuits=cuttingRequest.num_subcircuits,
         )
+    elif cuttingRequest.method == "automatic_gate_cutting":
+        res = automatic_gate_cut(
+            circuit,
+            num_subcircuits=cuttingRequest.num_subcircuits,
+            max_subcircuit_width=cuttingRequest.max_subcircuit_width,
+            max_cuts=cuttingRequest.max_cuts,
+        )
+        print(res)
     else:
         res = cut_circuit_wires(
             circuit,
@@ -158,6 +170,36 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
         res = array_to_counts(res)
 
     return CombineResultsResponse(result=res)
+
+
+def automatic_gate_cut(circuit, num_subcircuits, max_subcircuit_width, max_cuts):
+    partitions, _ = get_partitions(circuit, num_subcircuits[0], max_subcircuit_width)
+    partition_labels = get_partition_labels(partitions)
+    partitioned_problem = partition_problem(
+        circuit=circuit,
+        partition_labels=partition_labels,
+        observables=PauliList(["Z" * circuit.num_qubits]),
+    )
+    subexperiments, coefficients = generate_cutting_experiments(
+        circuits=partitioned_problem.subcircuits,
+        observables=partitioned_problem.subobservables,
+        num_samples=np.inf,
+    )
+
+    individual_subcircuits = []
+    subcircuit_labels = []
+
+    for label, circs in subexperiments.items():
+        for sub_circ in circs:
+            individual_subcircuits.append(sub_circ)
+            subcircuit_labels.append(label)
+
+    return {
+        "subcircuits": individual_subcircuits,
+        "subcircuit_labels": subcircuit_labels,
+        "coefficients": coefficients,
+        "subobservables": partitioned_problem.subobservables,
+    }
 
 
 def convert_subcircuit_results(subcircuit_results, subcircuits):

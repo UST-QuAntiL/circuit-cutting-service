@@ -25,7 +25,7 @@ def dag_to_hypergraph(dag: DAGDependency, k=2):
     return kahypar.Hypergraph(n, e, index_vector, edge_vector, k)
 
 
-def get_partitions(circuit_or_dag, num_partitions, max_partition_size, verbose=False):
+def get_partitions(circuit_or_dag, num_partitions, max_partition_size):
     if isinstance(circuit_or_dag, QuantumCircuit):
         dag = circuit_to_dagdependency(circuit_or_dag)
     elif isinstance(circuit_or_dag, DAGDependency):
