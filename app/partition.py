@@ -2,8 +2,9 @@ import kahypar
 from qiskit import QuantumCircuit
 from qiskit.converters import circuit_to_dagdependency
 from qiskit.dagcircuit import DAGDependency
+from pathlib import Path
 
-PATH_KAHYPAR_CONFIG = "./../kahypar.ini"
+PATH_KAHYPAR_CONFIG = str((Path(__file__).parent.parent / "kahypar.ini").resolve())
 
 
 def dag_to_hypergraph(dag: DAGDependency, k=2):
@@ -75,3 +76,7 @@ def get_two_dummy_partitions(circuit: QuantumCircuit):
     for i in range(n // 2, n):
         partitions[i] = 1
     return partitions
+
+
+def get_partition_labels(partitions):
+    pass
