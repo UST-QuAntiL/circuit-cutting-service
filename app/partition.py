@@ -25,25 +25,6 @@ def dag_to_hypergraph(dag: DAGDependency, k=2):
     return kahypar.Hypergraph(n, e, index_vector, edge_vector, k)
 
 
-def dag_to_wire_gate_hypergraph(dag: DAGDependency, k=2):
-    n = 0
-    e = -1
-    index_vector = []
-    edge_vector = []
-
-    for node in dag.topological_nodes():
-        # Get arguments for classical control (if any)
-        print(dag.predecessors(node.node_id))
-        if len(node.qargs) < 2:
-            continue
-        e += 1
-        index_vector.append(len(edge_vector))
-        for qarg in node.qargs:
-            edge_vector.append(qarg.index)
-
-    return kahypar.Hypergraph(n, e, index_vector, edge_vector, k)
-
-
 def get_partitions(circuit_or_dag, num_partitions, max_partition_size, verbose=False):
     if isinstance(circuit_or_dag, QuantumCircuit):
         dag = circuit_to_dagdependency(circuit_or_dag)
