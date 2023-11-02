@@ -79,4 +79,4 @@ def get_two_dummy_partitions(circuit: QuantumCircuit):
 
 
 def get_partition_labels(partitions):
-    pass
+    return "".join([str(val) for _, val in sorted(partitions.items())])

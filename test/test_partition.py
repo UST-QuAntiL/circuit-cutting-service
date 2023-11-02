@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from qiskit.circuit.library import EfficientSU2
 
-from app.partition import get_partitions
+from app.partition import get_partitions, get_partition_labels
 
 
 class PartitionTestCase(unittest.TestCase):
@@ -30,3 +30,9 @@ class PartitionTestCase(unittest.TestCase):
         self.assertTrue(
             all([size <= np.ceil(num_qubits / 2) for size in partition_sizes])
         )
+
+    def test_get_partition_labels(self):
+        partitions = {0: 0, 1: 1, 2: 1, 3: 0, 4: 1, 5: 1, 6: 0}
+        expected_partition_labels = "0110110"
+        partition_labels = get_partition_labels(partitions)
+        self.assertEqual(partition_labels, expected_partition_labels)
