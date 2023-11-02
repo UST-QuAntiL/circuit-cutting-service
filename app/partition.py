@@ -3,6 +3,8 @@ from qiskit import QuantumCircuit
 from qiskit.converters import circuit_to_dagdependency
 from qiskit.dagcircuit import DAGDependency
 
+PATH_KAHYPAR_CONFIG = "./../kahypar.ini"
+
 
 def dag_to_hypergraph(dag: DAGDependency, k=2):
     n = len(dag.qubits)
@@ -50,7 +52,7 @@ def get_partitions(circuit_or_dag, num_partitions, max_partition_size, verbose=F
         raise TypeError("Input has to be either a QuantumCircuit or DAGDependency")
     hypergraph = dag_to_hypergraph(dag, num_partitions)
     context = kahypar.Context()
-    context.loadINIconfiguration("kahypar.ini")
+    context.loadINIconfiguration(PATH_KAHYPAR_CONFIG)
     context.setK(num_partitions)
     if isinstance(max_partition_size, int):
         max_partition_size = [max_partition_size for _ in range(num_partitions)]
