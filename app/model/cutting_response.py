@@ -57,6 +57,41 @@ class CutCircuitsResponse:
         return json_execution_response
 
 
+class GateCutCircuitsResponse:
+    def __init__(
+        self,
+        format,
+        individual_subcircuits,
+        subcircuit_labels,
+        coefficients,
+        subobservables,
+    ):
+        super().__init__()
+        if format == "openqasm2":
+            self.individual_subcircuits = [
+                circ.qasm() for circ in individual_subcircuits
+            ]
+        if format == "qiskit":
+            self.individual_subcircuits = [
+                codecs.encode(pickle.dumps(circ), "base64").decode()
+                for circ in individual_subcircuits
+            ]
+        self.subcircuit_labels = subcircuit_labels
+        self.coefficients = [(c, w.value) for c, w in coefficients]
+        self.subobservables = {
+            label: obs.to_labels() for label, obs in subobservables.items()
+        }
+
+    def to_json(self):
+        json_execution_response = {
+            "individual_subcircuits": self.individual_subcircuits,
+            "subcircuit_labels": self.subcircuit_labels,
+            "coefficients": self.coefficients,
+            "subobservables": self.subobservables,
+        }
+        return json_execution_response
+
+
 class CutCircuitsResponseSchema(ma.Schema):
     max_subcircuit_width = ma.fields.Int()
     subcircuits = ma.fields.List(ma.fields.Str())
@@ -69,6 +104,16 @@ class CutCircuitsResponseSchema(ma.Schema):
     classical_cost = ma.fields.Int()
     individual_subcircuits = ma.fields.List(ma.fields.Str())
     init_meas_subcircuit_map = ma.fields.Str()
+
+
+class GateCutCircuitsResponseSchema(ma.Schema):
+    max_subcircuit_width = ma.fields.Int()
+    individual_subcircuits = ma.fields.List(ma.fields.Str())
+    subcircuit_labels = ma.fields.List(ma.fields.Str())
+    coefficients = ma.fields.List(ma.fields.Tuple((ma.fields.Float, ma.fields.Int)))
+    subobservables = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.List(ma.fields.Str())
+    )
 
 
 class CombineResultsResponse:

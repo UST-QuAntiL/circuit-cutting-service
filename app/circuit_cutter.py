@@ -19,7 +19,11 @@ from qiskit.quantum_info import PauliList
 from qiskit.transpiler.passes import RemoveBarriers
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
-from app.model.cutting_response import CutCircuitsResponse, CombineResultsResponse
+from app.model.cutting_response import (
+    CutCircuitsResponse,
+    CombineResultsResponse,
+    GateCutCircuitsResponse,
+)
 from app.partition import get_partitions, get_partition_labels
 from app.utils import array_to_counts, counts_to_array, normalize_array
 
@@ -60,45 +64,51 @@ def _create_individual_subcircuits(subcircuits, complete_path_map, num_cuts):
     return individual_subcircuits, init_meas_subcircuit_map
 
 
-def cut_circuit(cuttingRequest: CutCircuitsRequest):
-    if cuttingRequest.circuit_format == "openqasm2":
+def _get_circuit(cutting_request):
+    if cutting_request.circuit_format == "openqasm2":
         try:
-            circuit = QuantumCircuit.from_qasm_str(cuttingRequest.circuit)
+            circuit = QuantumCircuit.from_qasm_str(cutting_request.circuit)
         except Exception as e:
             return "Provided invalid OpenQASM 2.0 string"
-    elif cuttingRequest.circuit_format == "qiskit":
-        circuit = pickle.loads(codecs.decode(cuttingRequest.circuit.encode(), "base64"))
+    elif cutting_request.circuit_format == "qiskit":
+        circuit = pickle.loads(
+            codecs.decode(cutting_request.circuit.encode(), "base64")
+        )
     else:
         return 'format must be "openqasm2" or "qiskit"'
 
-    if cuttingRequest.max_subcircuit_width > circuit.num_qubits:
+    if cutting_request.max_subcircuit_width > circuit.num_qubits:
         raise ValueError(
-            f"The subcircuit width ({cuttingRequest.max_subcircuit_width}) is larger than the width of the original circuit ({circuit.num_qubits})"
+            f"The subcircuit width ({cutting_request.max_subcircuit_width}) is larger than the width of the original circuit ({circuit.num_qubits})"
         )
-    circuit = RemoveBarriers()(circuit)
     circuit.remove_final_measurements(inplace=True)
+    return RemoveBarriers()(circuit)
 
-    if cuttingRequest.method == "automatic":
+
+def cut_circuit(cutting_request: CutCircuitsRequest):
+    circuit = _get_circuit(cutting_request)
+
+    if cutting_request.method == "automatic":
         res = cut_circuit_wires(
             circuit,
-            method=cuttingRequest.method,
-            max_subcircuit_width=cuttingRequest.max_subcircuit_width,
-            max_cuts=cuttingRequest.max_cuts,
-            num_subcircuits=cuttingRequest.num_subcircuits,
+            method=cutting_request.method,
+            max_subcircuit_width=cutting_request.max_subcircuit_width,
+            max_cuts=cutting_request.max_cuts,
+            num_subcircuits=cutting_request.num_subcircuits,
         )
-    elif cuttingRequest.method == "automatic_gate_cutting":
+    elif cutting_request.method == "automatic_gate_cutting":
         res = automatic_gate_cut(
             circuit,
-            num_subcircuits=cuttingRequest.num_subcircuits,
-            max_subcircuit_width=cuttingRequest.max_subcircuit_width,
-            max_cuts=cuttingRequest.max_cuts,
+            num_subcircuits=cutting_request.num_subcircuits,
+            max_subcircuit_width=cutting_request.max_subcircuit_width,
+            max_cuts=cutting_request.max_cuts,
         )
-        print(res)
+        return GateCutCircuitsResponse(format=cutting_request.circuit_format, **res)
     else:
         res = cut_circuit_wires(
             circuit,
-            method=cuttingRequest.method,
-            subcircuit_vertices=cuttingRequest.subcircuit_vertices,
+            method=cutting_request.method,
+            subcircuit_vertices=cutting_request.subcircuit_vertices,
         )
     individual_subcircuits, init_meas_subcircuit_map = _create_individual_subcircuits(
         res["subcircuits"], res["complete_path_map"], res["num_cuts"]
@@ -109,7 +119,23 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
     res["individual_subcircuits"] = individual_subcircuits
     res["init_meas_subcircuit_map"] = init_meas_subcircuit_map
 
-    return CutCircuitsResponse(format=cuttingRequest.circuit_format, **res)
+    return CutCircuitsResponse(format=cutting_request.circuit_format, **res)
+
+
+def gate_cut_circuit(cutting_request: CutCircuitsRequest):
+    circuit = _get_circuit(cutting_request)
+
+    if cutting_request.method == "automatic_gate_cutting":
+        res = automatic_gate_cut(
+            circuit,
+            num_subcircuits=cutting_request.num_subcircuits,
+            max_subcircuit_width=cutting_request.max_subcircuit_width,
+            max_cuts=cutting_request.max_cuts,
+        )
+    else:
+        raise ValueError(f"{cutting_request.method} is an unkown cutting method.")
+
+    return GateCutCircuitsResponse(format=cutting_request.circuit_format, **res)
 
 
 def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
@@ -195,7 +221,7 @@ def automatic_gate_cut(circuit, num_subcircuits, max_subcircuit_width, max_cuts)
             subcircuit_labels.append(label)
 
     return {
-        "subcircuits": individual_subcircuits,
+        "individual_subcircuits": individual_subcircuits,
         "subcircuit_labels": subcircuit_labels,
         "coefficients": coefficients,
         "subobservables": partitioned_problem.subobservables,
