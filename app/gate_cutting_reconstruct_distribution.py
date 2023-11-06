@@ -106,7 +106,6 @@ def reconstruct_distribution(
             observables, "A" * len(observables[0])
         )
         results_dict: dict[Hashable, SamplerResult] = {"A": results}
-        expvals = np.zeros(len(observables))
 
     else:
         results_dict = results
@@ -114,7 +113,6 @@ def reconstruct_distribution(
             if any(obs.phase != 0 for obs in subobservable):
                 raise ValueError("An input observable has a phase not equal to 1.")
         subobservables_by_subsystem = observables
-        expvals = np.zeros(len(list(observables.values())[0]))
 
     subsystem_observables = {
         label: ObservableCollection(subobservables)
@@ -130,15 +128,11 @@ def reconstruct_distribution(
 
     # Reconstruct the expectation values
     for i, coeff in enumerate(coefficients):
-        current_expvals = np.ones((len(expvals),))
 
         coeff_result_dict = {}
 
         for label, so in subsystem_observables.items():
             coeff_result_dict[label] = defaultdict(float)
-            subsystem_expvals = [
-                np.zeros(len(cog.commuting_observables)) for cog in so.groups
-            ]
             for k, cog in enumerate(so.groups):
                 quasi_probs = results_dict[label].quasi_dists[i * len(so.groups) + k]
                 for outcome, quasi_prob in quasi_probs.items():
@@ -146,11 +140,6 @@ def reconstruct_distribution(
                         cog, outcome
                     )
                     coeff_result_dict[label][meas_outcomes] += qpd_factor * quasi_prob
-
-            for k, subobservable in enumerate(subobservables_by_subsystem[label]):
-                current_expvals[k] *= np.mean(
-                    [subsystem_expvals[m][n] for m, n in so.lookup[subobservable]]
-                )
 
         temp = np.ones(1)
         for label, r in coeff_result_dict.items():
