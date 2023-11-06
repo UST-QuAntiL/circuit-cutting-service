@@ -45,7 +45,7 @@ def _generate_reconstruction_test(num_qubits=4, partition_label=None, reps=2):
     )
     # Set up a Qiskit Aer Sampler primitive for each circuit partition
     samplers = {
-        label: Sampler(run_options={"shots": 2 ** 15})
+        label: Sampler(run_options={"shots": 2 ** 12})
         for label in subexperiments.keys()
     }
 
@@ -87,6 +87,15 @@ class ReconstructionTestCase(unittest.TestCase):
         num_qubits = 4
         exact_distribution, reconstructed_dist = _generate_reconstruction_test(
             num_qubits, "ABBA", reps=1
+        )
+        self.assertTrue(
+            np.allclose(exact_distribution, reconstructed_dist, atol=2 ** (-num_qubits))
+        )
+
+    def test_generate_test_data_3(self):
+        num_qubits = 5
+        exact_distribution, reconstructed_dist = _generate_reconstruction_test(
+            num_qubits, "ABBCD", reps=1
         )
         self.assertTrue(
             np.allclose(exact_distribution, reconstructed_dist, atol=2 ** (-num_qubits))
