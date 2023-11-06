@@ -1,6 +1,7 @@
 from typing import Dict
 
 import numpy as np
+from qiskit.primitives import SamplerResult
 
 
 def array_to_counts(array: np.ndarray) -> Dict:
@@ -29,3 +30,13 @@ def counts_to_array(counts_dict: Dict, n_qubits: int) -> np.ndarray:
 
 def normalize_array(array: np.ndarray) -> np.ndarray:
     return array / np.sum(array)
+
+
+def sampler_result_to_array_dict(sampler_result: SamplerResult):
+    result_array_dict = {}
+    for idx, exp in enumerate(sampler_result.experiments):
+        result_array_dict[idx] = counts_to_array(
+            exp["quasi_dists"], exp["metadata"]["simulator_metadata"]["num_qubits"]
+        )
+
+    return result_array_dict
