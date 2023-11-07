@@ -141,22 +141,6 @@ def cut_circuit(cutting_request: CutCircuitsRequest):
     return CutCircuitsResponse(format=cutting_request.circuit_format, **res)
 
 
-def gate_cut_circuit(cutting_request: CutCircuitsRequest):
-    circuit = _get_circuit(cutting_request)
-
-    if cutting_request.method == "automatic_gate_cutting":
-        res = automatic_gate_cut(
-            circuit,
-            num_subcircuits=cutting_request.num_subcircuits,
-            max_subcircuit_width=cutting_request.max_subcircuit_width,
-            max_cuts=cutting_request.max_cuts,
-        )
-    else:
-        raise ValueError(f"{cutting_request.method} is an unkown cutting method.")
-
-    return GateCutCircuitsResponse(format=cutting_request.circuit_format, **res)
-
-
 def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
     if input_dict.circuit_format == "openqasm2":
         try:
@@ -243,7 +227,7 @@ def automatic_gate_cut(circuit, num_subcircuits, max_subcircuit_width, max_cuts)
         "individual_subcircuits": individual_subcircuits,
         "subcircuit_labels": subcircuit_labels,
         "coefficients": coefficients,
-        "subobservables": partitioned_problem.subobservables,
+        "partition_labels": partition_labels,
     }
 
 

@@ -20,7 +20,7 @@
 
 from flask_smorest import Blueprint
 
-from app import circuit_cutter
+from app import gate_cutter
 from app.model.cutting_request import (
     CutCircuitsRequestSchema,
     CutCircuitsRequest,
@@ -32,11 +32,11 @@ from app.model.cutting_response import (
 blp_gate_cutting = Blueprint(
     "gate-cutting",
     __name__,
-    description="compute objective value from counts",
+    description="Use gate-cutting to cut a quantum circuit",
 )
 
 
-@blp_gate_cutting.route("/gateCutCircuits", methods=["POST"])
+@blp_gate_cutting.route("/gate-cutting/cutCircuits", methods=["POST"])
 @blp_gate_cutting.arguments(
     CutCircuitsRequestSchema,
     example={
@@ -51,6 +51,6 @@ blp_gate_cutting = Blueprint(
 @blp_gate_cutting.response(200, GateCutCircuitsResponseSchema)
 def gate_cut_circuit(json: dict):
     print("request", json)
-    result = circuit_cutter.gate_cut_circuit(CutCircuitsRequest(**json))
+    result = gate_cutter.gate_cut_circuit(CutCircuitsRequest(**json))
     print("result", result)
     return result

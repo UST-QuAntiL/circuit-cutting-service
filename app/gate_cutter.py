@@ -1,5 +1,5 @@
 # ******************************************************************************
-#  Copyright (c) 2020 University of Stuttgart
+#  Copyright (c) 2023 University of Stuttgart
 #
 #  See the NOTICE file(s) distributed with this work for additional
 #  information regarding copyright ownership.
@@ -16,30 +16,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 # ******************************************************************************
-
-from flask import Flask
-import logging
-
-from app.routes_gate_cutting import blp_gate_cutting
-from config import config
-from flask_smorest import Api
-from app.routes_wire_cutting import blp
+from app.wire_cutter import _get_circuit, automatic_gate_cut
+from app.model.cutting_request import CutCircuitsRequest
+from app.model.cutting_response import GateCutCircuitsResponse
 
 
-def create_app(config_name):
-    app = Flask(__name__)
-    app.logger.setLevel(logging.DEBUG)
-    app.config.from_object(config[config_name])
-    config[config_name].init_app(app)
+def gate_cut_circuit(cutting_request: CutCircuitsRequest):
+    circuit = _get_circuit(cutting_request)
 
-    api = Api(app)
-    api.register_blueprint(blp)
-    api.register_blueprint(blp_gate_cutting)
+    if cutting_request.method == "automatic_gate_cutting":
+        res = automatic_gate_cut(
+            circuit,
+            num_subcircuits=cutting_request.num_subcircuits,
+            max_subcircuit_width=cutting_request.max_subcircuit_width,
+            max_cuts=cutting_request.max_cuts,
+        )
+    else:
+        raise ValueError(f"{cutting_request.method} is an unkown cutting method.")
 
-    @app.route("/")
-    def heartbeat():
-        return '<h1>Circuit cutting service is running</h1> <h3>View the API Docs <a href="/api/swagger-ui">here</a></h3>'
-
-    from app import routes_wire_cutting
-
-    return app
+    return GateCutCircuitsResponse(format=cutting_request.circuit_format, **res)

@@ -20,7 +20,7 @@ from qiskit.providers import JobError, JobTimeoutError
 from qiskit.providers.jobstatus import JOB_FINAL_STATES
 from qiskit_aer import AerSimulator
 
-from app.circuit_cutter import _create_individual_subcircuits
+from app.wire_cutter import _create_individual_subcircuits
 from app.utils import array_to_counts
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

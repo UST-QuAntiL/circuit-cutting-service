@@ -19,7 +19,7 @@
 
 from flask_smorest import Blueprint
 
-from app import circuit_cutter
+from app import wire_cutter
 from app.model.cutting_request import (
     CutCircuitsRequestSchema,
     CutCircuitsRequest,
@@ -31,13 +31,12 @@ from app.model.cutting_response import (
     CombineResultsResponseSchema,
     CutCircuitsResponseSchema,
     CombineResultsResponseQuokkaSchema,
-    GateCutCircuitsResponseSchema,
 )
 
 blp = Blueprint(
-    "cutting",
+    "wire-cutting",
     __name__,
-    description="compute objective value from counts",
+    description="Use wire-cutting to cut a quantum circuit",
 )
 
 
@@ -57,7 +56,7 @@ blp = Blueprint(
 def cut_circuit(json: dict):
     """Execute a given quantum circuit on a specified quantum computer."""
     print("request", json)
-    result = circuit_cutter.cut_circuit(CutCircuitsRequest(**json))
+    result = wire_cutter.cut_circuit(CutCircuitsRequest(**json))
     print("result", result)
     return result
 
@@ -770,7 +769,7 @@ def cut_circuit(json: dict):
 def combine_results(json: dict):
     """Execute a given quantum circuit on a specified quantum computer."""
     print("request combine", json)
-    return circuit_cutter.reconstruct_result(CombineResultsRequest(**json))
+    return wire_cutter.reconstruct_result(CombineResultsRequest(**json))
 
 
 @blp.route("/combineResultsQuokka", methods=["POST"])
@@ -1458,6 +1457,6 @@ def combine_results(json: dict):
 def combine_results_quokka(json: dict):
     """Execute a given quantum circuit on a specified quantum computer."""
     print("request combinequokka", json)
-    return circuit_cutter.reconstruct_result(
+    return wire_cutter.reconstruct_result(
         CombineResultsRequest(**json), quokka_format=True
     )

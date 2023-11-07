@@ -83,7 +83,7 @@ class GateCutCircuitsResponse:
         individual_subcircuits,
         subcircuit_labels,
         coefficients,
-        subobservables,
+        partition_labels,
     ):
         super().__init__()
         if format == "openqasm2":
@@ -97,16 +97,14 @@ class GateCutCircuitsResponse:
             ]
         self.subcircuit_labels = subcircuit_labels
         self.coefficients = [(c, w.value) for c, w in coefficients]
-        self.subobservables = {
-            label: obs.to_labels() for label, obs in subobservables.items()
-        }
+        self.partition_labels = partition_labels
 
     def to_json(self):
         json_execution_response = {
             "individual_subcircuits": self.individual_subcircuits,
             "subcircuit_labels": self.subcircuit_labels,
             "coefficients": self.coefficients,
-            "subobservables": self.subobservables,
+            "partition_labels": self.partition_labels,
         }
         return json_execution_response
 
@@ -130,9 +128,7 @@ class GateCutCircuitsResponseSchema(ma.Schema):
     individual_subcircuits = ma.fields.List(ma.fields.Str())
     subcircuit_labels = ma.fields.List(ma.fields.Str())
     coefficients = ma.fields.List(ma.fields.Tuple((ma.fields.Float, ma.fields.Int)))
-    subobservables = ma.fields.Dict(
-        keys=ma.fields.Str(), values=ma.fields.List(ma.fields.Str())
-    )
+    partition_labels = ma.fields.Str()
 
 
 class CombineResultsResponse:
