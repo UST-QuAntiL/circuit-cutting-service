@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import Hashable, Sequence
 
 import numpy as np
 from circuit_knitting.cutting.cutting_decomposition import decompose_observables
-from circuit_knitting.cutting.cutting_experiments import _get_pauli_indices
 from circuit_knitting.cutting.cutting_reconstruction import _outcome_to_int
 from circuit_knitting.cutting.qpd import WeightType
 from circuit_knitting.utils.bitwise import bit_count
 from circuit_knitting.utils.observable_grouping import (
-    CommutingObservableGroup,
     ObservableCollection,
 )
 from qiskit.primitives import SamplerResult
@@ -25,7 +23,7 @@ from app.utils import (
 
 
 def _process_outcome_distribution(
-    cog: CommutingObservableGroup, outcome: int | str, /
+    qubits: int, outcome: int | str, /
 ) -> np.typing.NDArray[np.float64]:
     """
     Process a single outcome of a QPD experiment with observables.
@@ -39,7 +37,7 @@ def _process_outcome_distribution(
         this vector correspond to the elements of ``cog.commuting_observables``,
         and each result will be either +1 or -1.
     """
-    num_meas_bits = len(_get_pauli_indices(cog))
+    num_meas_bits = qubits
 
     outcome = _outcome_to_int(outcome)
     meas_outcomes = outcome & ((1 << num_meas_bits) - 1)
@@ -55,7 +53,6 @@ def _process_outcome_distribution(
 def reconstruct_distribution(
     results: SamplerResult | dict[Hashable, SamplerResult],
     coefficients: Sequence[tuple[float, WeightType]],
-    observables: PauliList | dict[Hashable, PauliList],
     partition_labels: str = None,
 ) -> dict[int, float]:
     r"""
@@ -95,59 +92,30 @@ def reconstruct_distribution(
         ValueError: ``observables`` and ``results`` are of incompatible types.
         ValueError: An input observable has a phase not equal to 1.
     """
-    if isinstance(observables, PauliList) and not isinstance(results, SamplerResult):
-        raise ValueError(
-            "If observables is a PauliList, results must be a SamplerResult instance."
-        )
-    if isinstance(observables, dict) and not isinstance(results, dict):
-        raise ValueError(
-            "If observables is a dictionary, results must also be a dictionary."
-        )
-
-    # If circuit was not separated, transform input data structures to dictionary format
-    if isinstance(observables, PauliList):
-        if any(obs.phase != 0 for obs in observables):
-            raise ValueError("An input observable has a phase not equal to 1.")
-        subobservables_by_subsystem = decompose_observables(
-            observables, "A" * len(observables[0])
-        )
-        results_dict: dict[Hashable, SamplerResult] = {"A": results}
-
-    else:
-        results_dict = results
-        for label, subobservable in observables.items():
-            if any(obs.phase != 0 for obs in subobservable):
-                raise ValueError("An input observable has a phase not equal to 1.")
-        subobservables_by_subsystem = observables
-
-    subsystem_observables = {
-        label: ObservableCollection(subobservables)
-        for label, subobservables in subobservables_by_subsystem.items()
-    }
-
     result_dict = defaultdict(float)
 
     labels = {*partition_labels}
+
+    qubits = Counter(partition_labels)
 
     label_index_lists = {
         label: list(find_character_in_string(partition_labels, label))
         for label in labels
     }
 
-    # Reconstruct the expectation values
+    # Reconstruct the probability distribution
     for i, coeff in enumerate(coefficients):
 
         coeff_result_dict = {}
 
-        for label, so in subsystem_observables.items():
+        for label in labels:
             coeff_result_dict[label] = defaultdict(float)
-            for k, cog in enumerate(so.groups):
-                quasi_probs = results_dict[label].quasi_dists[i * len(so.groups) + k]
-                for outcome, quasi_prob in quasi_probs.items():
-                    qpd_factor, meas_outcomes = _process_outcome_distribution(
-                        cog, outcome
-                    )
-                    coeff_result_dict[label][meas_outcomes] += qpd_factor * quasi_prob
+            quasi_probs = results[label].quasi_dists[i]
+            for outcome, quasi_prob in quasi_probs.items():
+                qpd_factor, meas_outcomes = _process_outcome_distribution(
+                    qubits[label], outcome
+                )
+                coeff_result_dict[label][meas_outcomes] += qpd_factor * quasi_prob
 
         for meas_keys, quasi_prob_vals in product_dicts(
             *list(coeff_result_dict.values())

@@ -66,7 +66,7 @@ def _generate_reconstruction_test(num_qubits=4, partition_label=None, reps=2):
     )
 
     reconstructed_counts = reconstruct_distribution(
-        results, coefficients, subobservables, partition_label
+        results, coefficients, partition_label
     )
     reconstructed_dist = counts_to_array(reconstructed_counts, num_qubits)
     return exact_distribution, reconstructed_dist
