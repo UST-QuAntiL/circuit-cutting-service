@@ -1,5 +1,5 @@
 # ******************************************************************************
-#  Copyright (c) 2020 University of Stuttgart
+#  Copyright (c) 2023 University of Stuttgart
 #
 #  See the NOTICE file(s) distributed with this work for additional
 #  information regarding copyright ownership.
@@ -58,26 +58,6 @@ def cut_circuit(json: dict):
     """Execute a given quantum circuit on a specified quantum computer."""
     print("request", json)
     result = circuit_cutter.cut_circuit(CutCircuitsRequest(**json))
-    print("result", result)
-    return result
-
-
-@blp.route("/gateCutCircuits", methods=["POST"])
-@blp.arguments(
-    CutCircuitsRequestSchema,
-    example={
-        "circuit": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[4];\ncreg meas[4];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[2],q[3];\nbarrier q[0],q[1],q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\n',
-        "method": "automatic",
-        "max_subcircuit_width": 3,
-        "max_num_subcircuits": 2,
-        "max_cuts": 2,
-        "circuit_format": "openqasm2",
-    },
-)
-@blp.response(200, GateCutCircuitsResponseSchema)
-def gate_cut_circuit(json: dict):
-    print("request", json)
-    result = circuit_cutter.gate_cut_circuit(CutCircuitsRequest(**json))
     print("result", result)
     return result
 

@@ -1,3 +1,22 @@
+# ******************************************************************************
+#  Copyright (c) 2023 University of Stuttgart
+#
+#  See the NOTICE file(s) distributed with this work for additional
+#  information regarding copyright ownership.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# ******************************************************************************
+
 from __future__ import annotations
 
 import math
@@ -5,15 +24,10 @@ from collections import defaultdict, Counter
 from typing import Hashable, Sequence
 
 import numpy as np
-from circuit_knitting.cutting.cutting_decomposition import decompose_observables
 from circuit_knitting.cutting.cutting_reconstruction import _outcome_to_int
 from circuit_knitting.cutting.qpd import WeightType
 from circuit_knitting.utils.bitwise import bit_count
-from circuit_knitting.utils.observable_grouping import (
-    ObservableCollection,
-)
 from qiskit.primitives import SamplerResult
-from qiskit.quantum_info import PauliList
 
 from app.utils import (
     product_dicts,
@@ -23,22 +37,18 @@ from app.utils import (
 
 
 def _process_outcome_distribution(
-    qubits: int, outcome: int | str, /
+    num_meas_bits: int, outcome: int | str, /
 ) -> np.typing.NDArray[np.float64]:
     """
-    Process a single outcome of a QPD experiment with observables.
+    Process a single outcome of a QPD experiment
 
     Args:
-        cog: The observable set being measured by the current experiment
+        num_meas_bits: The number of measured qubits in the result
         outcome: The outcome of the classical bits
 
     Returns:
-        A 1D array of the observable measurements.  The elements of
-        this vector correspond to the elements of ``cog.commuting_observables``,
-        and each result will be either +1 or -1.
+        A tuple with the QPD factor in the measurement outcome
     """
-    num_meas_bits = qubits
-
     outcome = _outcome_to_int(outcome)
     meas_outcomes = outcome & ((1 << num_meas_bits) - 1)
     qpd_outcomes = outcome >> num_meas_bits
@@ -53,10 +63,10 @@ def _process_outcome_distribution(
 def reconstruct_distribution(
     results: SamplerResult | dict[Hashable, SamplerResult],
     coefficients: Sequence[tuple[float, WeightType]],
-    partition_labels: str = None,
+    partition_labels: str,
 ) -> dict[int, float]:
     r"""
-    Reconstruct an expectation value from the results of the sub-experiments.
+    Reconstruct the probability distribution from the results of the sub-experiments.
 
     Args:
         results: The results from running the cutting subexperiments. If the cut circuit
@@ -79,18 +89,12 @@ def reconstruct_distribution(
             containing the coefficient (a ``float``) together with its :class:`.WeightType`, which denotes
             how the value was generated. The contribution from each subexperiment will be multiplied by
             its corresponding coefficient, and the resulting terms will be summed to obtain the reconstructed expectation value.
-        observables: The observable(s) for which the expectation values will be calculated.
-            This should be a :class:`~qiskit.quantum_info.PauliList` if ``results`` is a
-            :class:`~qiskit.primitives.SamplerResult` instance. Otherwise, it should be a
-            dictionary mapping partition labels to the observables associated with that partition.
+
+        partition_labels: Describing the cut of the circuit
+
 
     Returns:
-        A ``list`` of ``float``\ s, such that each float is an expectation
-        value corresponding to the input observable in the same position
-
-    Raises:
-        ValueError: ``observables`` and ``results`` are of incompatible types.
-        ValueError: An input observable has a phase not equal to 1.
+        The probability distribution as dict
     """
     result_dict = defaultdict(float)
 

@@ -1,8 +1,7 @@
-import unittest
-import os, sys
 import json
-
-from app.circuit_cutter import automatic_gate_cut
+import os
+import sys
+import unittest
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
@@ -48,24 +47,6 @@ class FlaskClientTestCase(unittest.TestCase):
                     "max_num_subcircuits": 2,
                     "max_cuts": 3,
                     "circuit_format": "qiskit",
-                }
-            ),
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
-        print(response.get_json())
-
-    def test_automatic_gate_cut(self):
-        response = self.client.post(
-            "/gateCutCircuits",
-            data=json.dumps(
-                {
-                    "circuit": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[4];\ncreg meas[4];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\n',
-                    "method": "automatic_gate_cutting",
-                    "max_subcircuit_width": 2,
-                    "max_num_subcircuits": 2,
-                    "max_cuts": 2,
-                    "circuit_format": "openqasm2",
                 }
             ),
             content_type="application/json",
