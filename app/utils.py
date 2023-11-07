@@ -40,3 +40,42 @@ def sampler_result_to_array_dict(sampler_result: SamplerResult):
         )
 
     return result_array_dict
+
+
+def find_character_in_string(string, ch):
+    for i, ltr in enumerate(string):
+        if ltr == ch:
+            yield i
+
+
+def shift_bits_by_index(num, idx_list):
+    n_bits = len(idx_list)
+    new_num = 0
+    sorted_idx_list = sorted(idx_list, reverse=True)
+    prev_index = sorted_idx_list[0]
+    for i, idx in enumerate(sorted_idx_list):
+        new_num = new_num << (prev_index - idx)
+        new_num += (num >> (n_bits - i - 1)) & 1
+        prev_index = idx
+
+    return new_num << prev_index
+
+
+def product_dicts(*dicts):
+    # Base case: If there is only one dictionary, convert its values to lists
+    if len(dicts) == 1:
+        return {(key,): [value] for key, value in dicts[0].items()}
+
+    # Recursive case: Compute the product of n-1 dictionaries
+    dicts_except_last = dicts[:-1]
+    product_except_last = product_dicts(*dicts_except_last)
+
+    # Get the last dictionary
+    last_dict = dicts[-1]
+
+    # Compute the product of the last dictionary with the result from the previous step using dictionary comprehensions
+    return {
+        (*prod_key, key): prod_val + [val]
+        for prod_key, prod_val in product_except_last.items()
+        for key, val in last_dict.items()
+    }

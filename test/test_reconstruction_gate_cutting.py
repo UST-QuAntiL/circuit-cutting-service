@@ -65,11 +65,10 @@ def _generate_reconstruction_test(num_qubits=4, partition_label=None, reps=2):
         exact_experiment["metadata"]["simulator_metadata"]["num_qubits"],
     )
 
-    reconstructed_dist = reconstruct_distribution(
-        results,
-        coefficients,
-        subobservables,
+    reconstructed_counts = reconstruct_distribution(
+        results, coefficients, subobservables, partition_label
     )
+    reconstructed_dist = counts_to_array(reconstructed_counts, num_qubits)
     return exact_distribution, reconstructed_dist
 
 
@@ -80,7 +79,8 @@ class ReconstructionTestCase(unittest.TestCase):
             num_qubits, "AABB"
         )
         self.assertTrue(
-            np.allclose(exact_distribution, reconstructed_dist, atol=2 ** (-num_qubits))
+            np.allclose(exact_distribution, reconstructed_dist, atol=0.025),
+            msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
         )
 
     def test_generate_test_data_2(self):
@@ -89,7 +89,8 @@ class ReconstructionTestCase(unittest.TestCase):
             num_qubits, "ABBA", reps=1
         )
         self.assertTrue(
-            np.allclose(exact_distribution, reconstructed_dist, atol=2 ** (-num_qubits))
+            np.allclose(exact_distribution, reconstructed_dist, atol=0.025),
+            msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
         )
 
     def test_generate_test_data_3(self):
@@ -98,5 +99,16 @@ class ReconstructionTestCase(unittest.TestCase):
             num_qubits, "ABBCD", reps=1
         )
         self.assertTrue(
-            np.allclose(exact_distribution, reconstructed_dist, atol=2 ** (-num_qubits))
+            np.allclose(exact_distribution, reconstructed_dist, atol=0.025),
+            msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
+        )
+
+    def test_generate_test_data_4(self):
+        num_qubits = 8
+        exact_distribution, reconstructed_dist = _generate_reconstruction_test(
+            num_qubits, "AAAABBBB"
+        )
+        self.assertTrue(
+            np.allclose(exact_distribution, reconstructed_dist, atol=0.025),
+            msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
         )

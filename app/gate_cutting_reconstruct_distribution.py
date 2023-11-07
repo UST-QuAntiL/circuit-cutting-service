@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from typing import Hashable, Sequence
 
@@ -16,7 +17,11 @@ from circuit_knitting.utils.observable_grouping import (
 from qiskit.primitives import SamplerResult
 from qiskit.quantum_info import PauliList
 
-from app.utils import counts_to_array
+from app.utils import (
+    product_dicts,
+    shift_bits_by_index,
+    find_character_in_string,
+)
 
 
 def _process_outcome_distribution(
@@ -51,7 +56,8 @@ def reconstruct_distribution(
     results: SamplerResult | dict[Hashable, SamplerResult],
     coefficients: Sequence[tuple[float, WeightType]],
     observables: PauliList | dict[Hashable, PauliList],
-) -> list[float]:
+    partition_labels: str = None,
+) -> dict[int, float]:
     r"""
     Reconstruct an expectation value from the results of the sub-experiments.
 
@@ -119,12 +125,14 @@ def reconstruct_distribution(
         for label, subobservables in subobservables_by_subsystem.items()
     }
 
-    qubits = {
-        label: len(subobservables[0])
-        for label, subobservables in subobservables_by_subsystem.items()
-    }
+    result_dict = defaultdict(float)
 
-    result = np.zeros(2 ** sum(qubits.values()))
+    labels = {*partition_labels}
+
+    label_index_lists = {
+        label: list(find_character_in_string(partition_labels, label))
+        for label in labels
+    }
 
     # Reconstruct the expectation values
     for i, coeff in enumerate(coefficients):
@@ -141,10 +149,12 @@ def reconstruct_distribution(
                     )
                     coeff_result_dict[label][meas_outcomes] += qpd_factor * quasi_prob
 
-        temp = np.ones(1)
-        for label, r in coeff_result_dict.items():
-            temp = np.kron(counts_to_array(r, qubits[label]), temp)
+        for meas_keys, quasi_prob_vals in product_dicts(
+            *list(coeff_result_dict.values())
+        ).items():
+            combined_meas = 0
+            for meas, label in zip(meas_keys, coeff_result_dict.keys()):
+                combined_meas += shift_bits_by_index(meas, label_index_lists[label])
+            result_dict[combined_meas] += coeff[0] * math.prod(quasi_prob_vals)
 
-        result += coeff[0] * temp
-
-    return result
+    return result_dict
