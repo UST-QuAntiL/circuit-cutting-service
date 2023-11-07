@@ -19,7 +19,7 @@ class FlaskClientTestCase(unittest.TestCase):
 
     def test_automatic_gate_cut(self):
         response = self.client.post(
-            "/gateCutCircuits",
+            "gate-cutting/cutCircuits",
             data=json.dumps(
                 {
                     "circuit": 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[4];\ncreg meas[4];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\n',
