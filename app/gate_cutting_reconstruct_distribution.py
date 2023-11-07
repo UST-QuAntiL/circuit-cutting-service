@@ -61,7 +61,7 @@ def _process_outcome_distribution(
 
 
 def reconstruct_distribution(
-    results: SamplerResult | dict[Hashable, SamplerResult],
+    results: dict[Hashable, SamplerResult] | dict[Hashable, list],
     coefficients: Sequence[tuple[float, WeightType]],
     partition_labels: str,
 ) -> dict[int, float]:
@@ -107,6 +107,14 @@ def reconstruct_distribution(
         for label in labels
     }
 
+    if isinstance(results, dict) and isinstance(
+        results[next(iter(labels))], SamplerResult
+    ):
+        results = {
+            label: [results[label].quasi_dists[i] for i in range(len(coefficients))]
+            for label in labels
+        }
+
     # Reconstruct the probability distribution
     for i, coeff in enumerate(coefficients):
 
@@ -114,7 +122,7 @@ def reconstruct_distribution(
 
         for label in labels:
             coeff_result_dict[label] = defaultdict(float)
-            quasi_probs = results[label].quasi_dists[i]
+            quasi_probs = results[label][i]
             for outcome, quasi_prob in quasi_probs.items():
                 qpd_factor, meas_outcomes = _process_outcome_distribution(
                     qubits[label], outcome
