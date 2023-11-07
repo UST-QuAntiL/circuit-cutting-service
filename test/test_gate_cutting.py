@@ -7,6 +7,7 @@ from collections import defaultdict
 
 import numpy as np
 from circuit_knitting.cutting import partition_problem, generate_cutting_experiments
+from qiskit import qasm3
 from qiskit.circuit.library import EfficientSU2
 from qiskit.quantum_info import PauliList
 from qiskit_aer.primitives import Sampler
@@ -86,7 +87,7 @@ def _generate_reconstruction_test(num_qubits=4, partition_labels=None, reps=2):
     )
 
 
-class FlaskClientTestCase(unittest.TestCase):
+class FlaskClientGateCuttingTestCase(unittest.TestCase):
     def setUp(self):
         self.app = create_app("testing")
         self.app_context = self.app.app_context()
@@ -122,7 +123,7 @@ class FlaskClientTestCase(unittest.TestCase):
             expected,
             results,
             coefficients,
-            partition_label,
+            partition_labels,
         ) = _generate_reconstruction_test(6, reps=1)
 
         response = self.client.post(
@@ -134,7 +135,7 @@ class FlaskClientTestCase(unittest.TestCase):
                     "cuts": {
                         "subcircuit_labels": subcircuit_labels,
                         "coefficients": [(c, w.value) for c, w in coefficients],
-                        "partition_label": partition_label,
+                        "partition_labels": partition_labels,
                     },
                 },
                 cls=NumpyEncoder,
@@ -147,3 +148,55 @@ class FlaskClientTestCase(unittest.TestCase):
             {int(key, 2): val for key, val in response.get_json()["result"].items()}, 6
         )
         self.assertTrue((expected == actual).all())
+
+    def test_all_gate_cutting(self):
+
+        # circuit_qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[4];\ncreg meas[4];\nh q[0];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\n'
+        circuit_qasm = 'OPENQASM 3;\ninclude "stdgates.inc";\nbit[4] meas;\nqubit[4] _all_qubits;\nlet q = _all_qubits[0:3];\nh q[0];\ncx q[0], q[1];\ncx q[1], q[2];\ncx q[2], q[3];\nmeas[0] = measure q[0];\nmeas[1] = measure q[1];\nmeas[2] = measure q[2];\nmeas[3] = measure q[3];\n'
+
+        response = self.client.post(
+            "gate-cutting/cutCircuits",
+            data=json.dumps(
+                {
+                    "circuit": circuit_qasm,
+                    "method": "automatic_gate_cutting",
+                    "max_subcircuit_width": 2,
+                    "max_num_subcircuits": 2,
+                    "max_cuts": 2,
+                    "circuit_format": "openqasm3",
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        subcircuits = [
+            qasm3.loads(qasm_circ)
+            for qasm_circ in response.get_json()["individual_subcircuits"]
+        ]
+        sampler = Sampler(run_options={"shots": 2 ** 12})
+        results = sampler.run(subcircuits).result()
+        results = [
+            {"{0:b}".format(key): val for key, val in res.items()}
+            for res in results.quasi_dists
+        ]
+
+        response2 = self.client.post(
+            "/gate-cutting/combineResultsQuokka",
+            data=json.dumps(
+                {
+                    "circuit": circuit_qasm,
+                    "subcircuit_results": results,
+                    "cuts": {
+                        "subcircuit_labels": response.get_json()["subcircuit_labels"],
+                        "coefficients": response.get_json()["coefficients"],
+                        "partition_labels": response.get_json()["partition_labels"],
+                    },
+                },
+                cls=NumpyEncoder,
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response2.status_code, 200)

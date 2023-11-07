@@ -33,10 +33,10 @@ from app.gate_cutting_reconstruct_distribution import reconstruct_distribution
 from app.utils import counts_to_array
 
 
-def _generate_reconstruction_test(num_qubits=4, partition_label=None, reps=2):
+def _generate_reconstruction_test(num_qubits=4, partition_labels=None, reps=2):
 
-    if partition_label is None:
-        partition_label = ("A" * (num_qubits // 2)) + ("B" * math.ceil(num_qubits / 2))
+    if partition_labels is None:
+        partition_labels = ("A" * (num_qubits // 2)) + ("B" * math.ceil(num_qubits / 2))
 
     circuit = EfficientSU2(
         num_qubits=num_qubits,
@@ -53,7 +53,7 @@ def _generate_reconstruction_test(num_qubits=4, partition_label=None, reps=2):
     observables = PauliList(["Z" * num_qubits])
 
     partitioned_problem = partition_problem(
-        circuit=circuit, partition_labels=partition_label, observables=observables
+        circuit=circuit, partition_labels=partition_labels, observables=observables
     )
     subcircuits = partitioned_problem.subcircuits
     subobservables = partitioned_problem.subobservables
@@ -85,7 +85,7 @@ def _generate_reconstruction_test(num_qubits=4, partition_label=None, reps=2):
     )
 
     reconstructed_counts = reconstruct_distribution(
-        results, coefficients, partition_label
+        results, coefficients, partition_labels
     )
     reconstructed_dist = counts_to_array(reconstructed_counts, num_qubits)
     return exact_distribution, reconstructed_dist

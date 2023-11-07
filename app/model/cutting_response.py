@@ -25,6 +25,7 @@ import numpy as np
 import argschema.fields
 import jsonpickle
 import marshmallow as ma
+from qiskit import qasm3
 
 
 class CutCircuitsResponse:
@@ -47,7 +48,12 @@ class CutCircuitsResponse:
             self.individual_subcircuits = [
                 circ.qasm() for circ in individual_subcircuits
             ]
-        if format == "qiskit":
+        elif format == "openqasm3":
+            self.subcircuits = [qasm3.dumps(circ) for circ in subcircuits]
+            self.individual_subcircuits = [
+                qasm3.dumps(circ) for circ in individual_subcircuits
+            ]
+        elif format == "qiskit":
             self.subcircuits = [
                 codecs.encode(pickle.dumps(circ), "base64").decode()
                 for circ in subcircuits
@@ -86,9 +92,9 @@ class GateCutCircuitsResponse:
         partition_labels,
     ):
         super().__init__()
-        if format == "openqasm2":
+        if format == "openqasm3":
             self.individual_subcircuits = [
-                circ.qasm() for circ in individual_subcircuits
+                qasm3.dumps(circ) for circ in individual_subcircuits
             ]
         if format == "qiskit":
             self.individual_subcircuits = [

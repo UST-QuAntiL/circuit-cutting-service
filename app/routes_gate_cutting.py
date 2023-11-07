@@ -236,7 +236,7 @@ def gate_cut_circuit(json: dict):
                 (0.5, 1),
                 (-0.5, 1),
             ],
-            "partition_label": "AAABBB",
+            "partition_labels": "AAABBB",
         },
     },
 )

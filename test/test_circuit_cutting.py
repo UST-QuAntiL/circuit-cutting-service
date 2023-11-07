@@ -36,6 +36,24 @@ class FlaskClientTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         print(response.get_json())
 
+    def test_automatic_cutting_qasm3(self):
+        response = self.client.post(
+            "/cutCircuits",
+            data=json.dumps(
+                {
+                    "circuit": 'OPENQASM 3;\ninclude "stdgates.inc";\nbit[4] meas;\nqubit[4] _all_qubits;\nlet q = _all_qubits[0:3];\nh q[0];\ncx q[0], q[1];\ncx q[1], q[2];\ncx q[2], q[3];\nmeas[0] = measure q[0];\nmeas[1] = measure q[1];\nmeas[2] = measure q[2];\nmeas[3] = measure q[3];\n',
+                    "method": "automatic",
+                    "max_subcircuit_width": 3,
+                    "max_num_subcircuits": 2,
+                    "max_cuts": 2,
+                    "circuit_format": "openqasm3",
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        print(response.get_json())
+
     def test_automatic_cutting_qiskit(self):
         response = self.client.post(
             "/cutCircuits",

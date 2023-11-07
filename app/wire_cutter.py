@@ -31,14 +31,13 @@ from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
     mutate_measurement_basis,
     measure_prob,
 )
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, qasm3
 from qiskit.transpiler.passes import RemoveBarriers
 
 from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
 from app.model.cutting_response import (
     CutCircuitsResponse,
     CombineResultsResponse,
-    GateCutCircuitsResponse,
 )
 from app.utils import array_to_counts, counts_to_array, normalize_array
 
@@ -85,12 +84,17 @@ def _get_circuit(cutting_request):
             circuit = QuantumCircuit.from_qasm_str(cutting_request.circuit)
         except Exception as e:
             return "Provided invalid OpenQASM 2.0 string"
+    elif cutting_request.circuit_format == "openqasm3":
+        try:
+            circuit = qasm3.loads(cutting_request.circuit)
+        except Exception as e:
+            return "Provided invalid OpenQASM 3.0 string"
     elif cutting_request.circuit_format == "qiskit":
         circuit = pickle.loads(
             codecs.decode(cutting_request.circuit.encode(), "base64")
         )
     else:
-        return 'format must be "openqasm2" or "qiskit"'
+        return 'format must be "openqasm2", "openqasm3"  or "qiskit"'
 
     if cutting_request.max_subcircuit_width > circuit.num_qubits:
         raise ValueError(
@@ -143,6 +147,17 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
             ]
         except Exception as e:
             return "Provided invalid OpenQASM 2.0 string"
+    elif input_dict.circuit_format == "openqasm3":
+        try:
+            circuit = qasm3.loads(input_dict.circuit)
+            input_dict.cuts["subcircuits"] = [
+                qasm3.loads(qasm) for qasm in input_dict.cuts["subcircuits"]
+            ]
+            input_dict.cuts["individual_subcircuits"] = [
+                qasm3.loads(qasm) for qasm in input_dict.cuts["individual_subcircuits"]
+            ]
+        except Exception as e:
+            return "Provided invalid OpenQASM 3.0 string"
     elif input_dict.circuit_format == "qiskit":
         circuit = pickle.loads(codecs.decode(input_dict.circuit.encode(), "base64"))
         input_dict.cuts["subcircuits"] = [
@@ -154,7 +169,7 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
             for ind_circ in input_dict.cuts["individual_subcircuits"]
         ]
     else:
-        return 'format must be "openqasm2" or "qiskit"'
+        return 'format must be "openqasm2", "openqasm3" or "qiskit"'
 
     try:
         input_dict.cuts["complete_path_map"] = jsonpickle.decode(

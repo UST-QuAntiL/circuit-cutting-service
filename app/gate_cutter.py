@@ -86,9 +86,9 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
     result = reconstruct_distribution(
         subcircuit_results_dict,
         input_dict.cuts["coefficients"],
-        input_dict.cuts["partition_label"],
+        input_dict.cuts["partition_labels"],
     )
-    num_qubits = len(input_dict.cuts["partition_label"])
+    num_qubits = len(input_dict.cuts["partition_labels"])
 
     if not quokka_format:
         result = counts_to_array(result, num_qubits)
