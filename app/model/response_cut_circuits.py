@@ -24,6 +24,7 @@ import jsonpickle
 import marshmallow as ma
 from qiskit import qasm3
 
+
 class CutCircuitsResponse:
     def __init__(
         self,
