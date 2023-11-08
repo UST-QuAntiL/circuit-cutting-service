@@ -34,11 +34,11 @@ from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
 from qiskit import QuantumCircuit, qasm3
 from qiskit.transpiler.passes import RemoveBarriers
 
-from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
-from app.model.cutting_response import (
-    CutCircuitsResponse,
-    CombineResultsResponse,
-)
+from app.model.request_combine_results import CombineResultsRequest
+from app.model.request_cut_circuits import CutCircuitsRequest
+from app.model.response_combine_results import CombineResultsResponse
+from app.model.response_cut_circuits import CutCircuitsResponse
+
 from app.utils import array_to_counts, counts_to_array, normalize_array
 
 

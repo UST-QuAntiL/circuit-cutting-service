@@ -20,18 +20,18 @@
 from flask_smorest import Blueprint
 
 from app import wire_cutter
-from app.model.cutting_request import (
-    CutCircuitsRequestSchema,
-    CutCircuitsRequest,
+from app.model.request_combine_results import (
     CombineResultsRequestSchema,
     CombineResultsRequest,
     CombineResultsRequestQuokkaSchema,
 )
-from app.model.cutting_response import (
+from app.model.request_cut_circuits import CutCircuitsRequestSchema, CutCircuitsRequest
+
+from app.model.response_combine_results import (
     CombineResultsResponseSchema,
-    CutCircuitsResponseSchema,
     CombineResultsResponseQuokkaSchema,
 )
+from app.model.response_cut_circuits import CutCircuitsResponseSchema
 
 blp = Blueprint(
     "wire-cutting",

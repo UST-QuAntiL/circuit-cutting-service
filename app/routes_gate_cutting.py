@@ -21,16 +21,14 @@
 from flask_smorest import Blueprint
 
 from app import gate_cutter
-from app.model.cutting_request import (
-    CutCircuitsRequestSchema,
-    CutCircuitsRequest,
-    CombineResultsRequest,
+from app.model.request_combine_results import (
     CombineResultsRequestQuokkaSchema,
+    CombineResultsRequest,
 )
-from app.model.cutting_response import (
-    GateCutCircuitsResponseSchema,
-    CombineResultsResponseQuokkaSchema,
-)
+from app.model.request_cut_circuits import CutCircuitsRequestSchema, CutCircuitsRequest
+
+from app.model.response_combine_results import CombineResultsResponseQuokkaSchema
+from app.model.response_gate_cut_circuits import GateCutCircuitsResponseSchema
 
 blp_gate_cutting = Blueprint(
     "gate-cutting",

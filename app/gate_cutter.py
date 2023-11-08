@@ -23,8 +23,10 @@ from circuit_knitting.cutting import partition_problem, generate_cutting_experim
 from qiskit.quantum_info import PauliList
 
 from app.gate_cutting_reconstruct_distribution import reconstruct_distribution
-from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
-from app.model.cutting_response import GateCutCircuitsResponse, CombineResultsResponse
+from app.model.request_combine_results import CombineResultsRequest
+from app.model.request_cut_circuits import CutCircuitsRequest
+from app.model.response_combine_results import CombineResultsResponse
+from app.model.response_gate_cut_circuits import GateCutCircuitsResponse
 from app.partition import get_partitions, get_partition_labels
 from app.utils import counts_to_array
 from app.wire_cutter import _get_circuit

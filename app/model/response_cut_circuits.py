@@ -20,13 +20,9 @@
 import codecs
 import pickle
 
-import numpy as np
-
-import argschema.fields
 import jsonpickle
 import marshmallow as ma
 from qiskit import qasm3
-
 
 class CutCircuitsResponse:
     def __init__(
@@ -82,39 +78,6 @@ class CutCircuitsResponse:
         return json_execution_response
 
 
-class GateCutCircuitsResponse:
-    def __init__(
-        self,
-        format,
-        individual_subcircuits,
-        subcircuit_labels,
-        coefficients,
-        partition_labels,
-    ):
-        super().__init__()
-        if format == "openqasm3":
-            self.individual_subcircuits = [
-                qasm3.dumps(circ) for circ in individual_subcircuits
-            ]
-        if format == "qiskit":
-            self.individual_subcircuits = [
-                codecs.encode(pickle.dumps(circ), "base64").decode()
-                for circ in individual_subcircuits
-            ]
-        self.subcircuit_labels = subcircuit_labels
-        self.coefficients = [(c, w.value) for c, w in coefficients]
-        self.partition_labels = partition_labels
-
-    def to_json(self):
-        json_execution_response = {
-            "individual_subcircuits": self.individual_subcircuits,
-            "subcircuit_labels": self.subcircuit_labels,
-            "coefficients": self.coefficients,
-            "partition_labels": self.partition_labels,
-        }
-        return json_execution_response
-
-
 class CutCircuitsResponseSchema(ma.Schema):
     max_subcircuit_width = ma.fields.Int()
     subcircuits = ma.fields.List(ma.fields.Str())
@@ -127,31 +90,3 @@ class CutCircuitsResponseSchema(ma.Schema):
     classical_cost = ma.fields.Int()
     individual_subcircuits = ma.fields.List(ma.fields.Str())
     init_meas_subcircuit_map = ma.fields.Str()
-
-
-class GateCutCircuitsResponseSchema(ma.Schema):
-    max_subcircuit_width = ma.fields.Int()
-    individual_subcircuits = ma.fields.List(ma.fields.Str())
-    subcircuit_labels = ma.fields.List(ma.fields.Str())
-    coefficients = ma.fields.List(ma.fields.Tuple((ma.fields.Float, ma.fields.Int)))
-    partition_labels = ma.fields.Str()
-
-
-class CombineResultsResponse:
-    def __init__(self, result):
-        super().__init__()
-        self.result = result
-
-    def to_json(self):
-        json_execution_response = {
-            "result": self.result,
-        }
-        return json_execution_response
-
-
-class CombineResultsResponseSchema(ma.Schema):
-    result = argschema.fields.NumpyArray(dtype=np.float)
-
-
-class CombineResultsResponseQuokkaSchema(ma.Schema):
-    result = ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Float())
