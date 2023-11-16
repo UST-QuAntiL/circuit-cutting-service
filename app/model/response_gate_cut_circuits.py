@@ -26,16 +26,18 @@ from qiskit import qasm3
 
 class GateCutCircuitsResponse:
     def __init__(
-            self,
-            format,
-            individual_subcircuits,
-            subcircuit_labels,
-            coefficients,
-            partition_labels,
+        self,
+        format,
+        individual_subcircuits,
+        subcircuit_labels,
+        coefficients,
+        partition_labels,
     ):
         super().__init__()
         if format == "openqasm2":
-            self.individual_subcircuits = [circ.qasm() for circ in individual_subcircuits]
+            self.individual_subcircuits = [
+                circ.qasm() for circ in individual_subcircuits
+            ]
         elif format == "openqasm3":
             self.individual_subcircuits = [
                 qasm3.dumps(circ) for circ in individual_subcircuits
