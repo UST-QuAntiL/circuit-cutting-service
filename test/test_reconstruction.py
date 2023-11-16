@@ -1,7 +1,8 @@
+import json
+import os
+import sys
 import time
 import unittest
-import os, sys
-import json
 
 import jsonpickle
 import numpy as np
@@ -13,13 +14,13 @@ from circuit_knitting.cutting.cutqc import (
 from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
     run_subcircuits,
 )
-from qiskit import QuantumCircuit, assemble, transpile
+from qiskit import QuantumCircuit, transpile
 from qiskit.circuit.library import EfficientSU2
 from qiskit.providers import JobError, JobTimeoutError
 from qiskit.providers.jobstatus import JOB_FINAL_STATES
 from qiskit_aer import AerSimulator
 
-from app.circuit_cutter import _create_individual_subcircuits
+from app.wire_cutter import _create_individual_subcircuits
 from app.utils import array_to_counts
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -1,3 +1,22 @@
+# ******************************************************************************
+#  Copyright (c) 2023 University of Stuttgart
+#
+#  See the NOTICE file(s) distributed with this work for additional
+#  information regarding copyright ownership.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# ******************************************************************************
+
 import codecs
 import pickle
 
@@ -12,11 +31,14 @@ from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
     mutate_measurement_basis,
     measure_prob,
 )
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, qasm3
 from qiskit.transpiler.passes import RemoveBarriers
 
-from app.model.cutting_request import CutCircuitsRequest, CombineResultsRequest
-from app.model.cutting_response import CutCircuitsResponse, CombineResultsResponse
+from app.model.request_combine_results import CombineResultsRequest
+from app.model.request_cut_circuits import CutCircuitsRequest
+from app.model.response_combine_results import CombineResultsResponse
+from app.model.response_cut_circuits import CutCircuitsResponse
+
 from app.utils import array_to_counts, counts_to_array, normalize_array
 
 
@@ -56,37 +78,48 @@ def _create_individual_subcircuits(subcircuits, complete_path_map, num_cuts):
     return individual_subcircuits, init_meas_subcircuit_map
 
 
-def cut_circuit(cuttingRequest: CutCircuitsRequest):
-    if cuttingRequest.circuit_format == "openqasm2":
+def _get_circuit(cutting_request):
+    if cutting_request.circuit_format == "openqasm2":
         try:
-            circuit = QuantumCircuit.from_qasm_str(cuttingRequest.circuit)
+            circuit = QuantumCircuit.from_qasm_str(cutting_request.circuit)
         except Exception as e:
             return "Provided invalid OpenQASM 2.0 string"
-    elif cuttingRequest.circuit_format == "qiskit":
-        circuit = pickle.loads(codecs.decode(cuttingRequest.circuit.encode(), "base64"))
+    elif cutting_request.circuit_format == "openqasm3":
+        try:
+            circuit = qasm3.loads(cutting_request.circuit)
+        except Exception as e:
+            return "Provided invalid OpenQASM 3.0 string"
+    elif cutting_request.circuit_format == "qiskit":
+        circuit = pickle.loads(
+            codecs.decode(cutting_request.circuit.encode(), "base64")
+        )
     else:
-        return 'format must be "openqasm2" or "qiskit"'
+        return 'format must be "openqasm2", "openqasm3"  or "qiskit"'
 
-    if cuttingRequest.max_subcircuit_width > circuit.num_qubits:
+    if cutting_request.max_subcircuit_width > circuit.num_qubits:
         raise ValueError(
-            f"The subcircuit width ({cuttingRequest.max_subcircuit_width}) is larger than the width of the original circuit ({circuit.num_qubits})"
+            f"The subcircuit width ({cutting_request.max_subcircuit_width}) is larger than the width of the original circuit ({circuit.num_qubits})"
         )
-    circuit = RemoveBarriers()(circuit)
     circuit.remove_final_measurements(inplace=True)
+    return RemoveBarriers()(circuit)
 
-    if cuttingRequest.method == "automatic":
+
+def cut_circuit(cutting_request: CutCircuitsRequest):
+    circuit = _get_circuit(cutting_request)
+
+    if cutting_request.method == "automatic":
         res = cut_circuit_wires(
             circuit,
-            method=cuttingRequest.method,
-            max_subcircuit_width=cuttingRequest.max_subcircuit_width,
-            max_cuts=cuttingRequest.max_cuts,
-            num_subcircuits=cuttingRequest.num_subcircuits,
+            method=cutting_request.method,
+            max_subcircuit_width=cutting_request.max_subcircuit_width,
+            max_cuts=cutting_request.max_cuts,
+            num_subcircuits=cutting_request.num_subcircuits,
         )
     else:
         res = cut_circuit_wires(
             circuit,
-            method=cuttingRequest.method,
-            subcircuit_vertices=cuttingRequest.subcircuit_vertices,
+            method=cutting_request.method,
+            subcircuit_vertices=cutting_request.subcircuit_vertices,
         )
     individual_subcircuits, init_meas_subcircuit_map = _create_individual_subcircuits(
         res["subcircuits"], res["complete_path_map"], res["num_cuts"]
@@ -97,7 +130,7 @@ def cut_circuit(cuttingRequest: CutCircuitsRequest):
     res["individual_subcircuits"] = individual_subcircuits
     res["init_meas_subcircuit_map"] = init_meas_subcircuit_map
 
-    return CutCircuitsResponse(format=cuttingRequest.circuit_format, **res)
+    return CutCircuitsResponse(format=cutting_request.circuit_format, **res)
 
 
 def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
@@ -114,6 +147,17 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
             ]
         except Exception as e:
             return "Provided invalid OpenQASM 2.0 string"
+    elif input_dict.circuit_format == "openqasm3":
+        try:
+            circuit = qasm3.loads(input_dict.circuit)
+            input_dict.cuts["subcircuits"] = [
+                qasm3.loads(qasm) for qasm in input_dict.cuts["subcircuits"]
+            ]
+            input_dict.cuts["individual_subcircuits"] = [
+                qasm3.loads(qasm) for qasm in input_dict.cuts["individual_subcircuits"]
+            ]
+        except Exception as e:
+            return "Provided invalid OpenQASM 3.0 string"
     elif input_dict.circuit_format == "qiskit":
         circuit = pickle.loads(codecs.decode(input_dict.circuit.encode(), "base64"))
         input_dict.cuts["subcircuits"] = [
@@ -125,7 +169,7 @@ def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
             for ind_circ in input_dict.cuts["individual_subcircuits"]
         ]
     else:
-        return 'format must be "openqasm2" or "qiskit"'
+        return 'format must be "openqasm2", "openqasm3" or "qiskit"'
 
     try:
         input_dict.cuts["complete_path_map"] = jsonpickle.decode(
