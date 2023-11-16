@@ -113,6 +113,10 @@ class FlaskClientGateCuttingTestCase(unittest.TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 200)
+        self.assertIn('coefficients', response.get_json())
+        self.assertIn('subcircuit_labels', response.get_json())
+        self.assertIn('partition_labels', response.get_json())
+        self.assertIn('individual_subcircuits', response.get_json())
         print(response.get_json())
 
     def test_reconstruction(self):
