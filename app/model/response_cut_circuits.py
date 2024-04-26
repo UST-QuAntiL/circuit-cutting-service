@@ -1,11 +1,28 @@
+# ******************************************************************************
+#  Copyright (c) 2023 University of Stuttgart
+#
+#  See the NOTICE file(s) distributed with this work for additional
+#  information regarding copyright ownership.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+# ******************************************************************************
+
 import codecs
 import pickle
 
-import numpy as np
-
-import argschema.fields
 import jsonpickle
 import marshmallow as ma
+from qiskit import qasm3
 
 
 class CutCircuitsResponse:
@@ -28,7 +45,12 @@ class CutCircuitsResponse:
             self.individual_subcircuits = [
                 circ.qasm() for circ in individual_subcircuits
             ]
-        if format == "qiskit":
+        elif format == "openqasm3":
+            self.subcircuits = [qasm3.dumps(circ) for circ in subcircuits]
+            self.individual_subcircuits = [
+                qasm3.dumps(circ) for circ in individual_subcircuits
+            ]
+        elif format == "qiskit":
             self.subcircuits = [
                 codecs.encode(pickle.dumps(circ), "base64").decode()
                 for circ in subcircuits
@@ -69,23 +91,3 @@ class CutCircuitsResponseSchema(ma.Schema):
     classical_cost = ma.fields.Int()
     individual_subcircuits = ma.fields.List(ma.fields.Str())
     init_meas_subcircuit_map = ma.fields.Str()
-
-
-class CombineResultsResponse:
-    def __init__(self, result):
-        super().__init__()
-        self.result = result
-
-    def to_json(self):
-        json_execution_response = {
-            "result": self.result,
-        }
-        return json_execution_response
-
-
-class CombineResultsResponseSchema(ma.Schema):
-    result = argschema.fields.NumpyArray(dtype=np.float)
-
-
-class CombineResultsResponseQuokkaSchema(ma.Schema):
-    result = ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Float())

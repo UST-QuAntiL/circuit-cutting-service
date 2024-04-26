@@ -9,7 +9,7 @@ black==21.8b0
 click==8.0.1
 marshmallow==3.13.0
 coverage==5.5
-circuit-knitting-toolbox==0.4.0
+circuit-knitting-toolbox==0.5.0
 numpy~=1.23.5
 argschema~=3.0.4
 jsonpickle~=3.0.0
@@ -17,3 +17,5 @@ pytest~=7.2
 symengine==0.9.2
 docplex>=2.23.222
 cplex>=22.1.0.0
+kahypar~=1.1.7
+qiskit_qasm3_import~=0.3.0
