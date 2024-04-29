@@ -39,7 +39,7 @@ def dag_to_hypergraph(dag: DAGDependency, k=2):
         e += 1
         index_vector.append(len(edge_vector))
         for qarg in node.qargs:
-            edge_vector.append(qarg.index)
+            edge_vector.append(qarg._index)
 
     return kahypar.Hypergraph(n, e, index_vector, edge_vector, k)
 

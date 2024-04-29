@@ -18,7 +18,7 @@ class PartitionTestCase(unittest.TestCase):
         circuit = circuit.decompose()
 
         params = [(np.pi * i) / 16 for i in range(len(circuit.parameters))]
-        circuit = circuit.bind_parameters(params)
+        circuit = circuit.assign_parameters(params)
         partitions, partition_sizes = get_partitions(
             circuit,
             num_partitions=num_partitions,

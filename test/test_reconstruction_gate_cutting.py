@@ -48,7 +48,7 @@ def _generate_reconstruction_test(num_qubits=4, partition_labels=None, reps=2):
     circuit = circuit.decompose()
 
     params = [np.random.random() * 2 * np.pi for _ in circuit.parameters]
-    circuit = circuit.bind_parameters(params)
+    circuit = circuit.assign_parameters(params)
 
     observables = PauliList(["Z" * num_qubits])
 
@@ -78,10 +78,9 @@ def _generate_reconstruction_test(num_qubits=4, partition_labels=None, reps=2):
     qc_meas = circuit.measure_all(inplace=False)
     result_exact = sampler_exact.run(qc_meas).result()
 
-    exact_experiment = result_exact.experiments[0]
     exact_distribution = counts_to_array(
-        exact_experiment["quasi_dists"],
-        exact_experiment["metadata"]["simulator_metadata"]["num_qubits"],
+        result_exact.quasi_dists[0],
+        result_exact.metadata[0]["simulator_metadata"]["num_qubits"],
     )
 
     reconstructed_counts = reconstruct_distribution(

@@ -14,7 +14,7 @@ from circuit_knitting.cutting.cutqc import (
 from circuit_knitting.cutting.cutqc.wire_cutting_evaluation import (
     run_subcircuits,
 )
-from qiskit import QuantumCircuit, transpile
+from qiskit import QuantumCircuit, transpile, qasm2
 from qiskit.circuit.library import EfficientSU2
 from qiskit.providers import JobError, JobTimeoutError
 from qiskit.providers.jobstatus import JOB_FINAL_STATES
@@ -46,7 +46,7 @@ def generate_su2_test(num_qubits):
     circuit = circuit.decompose()
 
     params = [(np.pi * i) / 16 for i in range(len(circuit.parameters))]
-    circuit = circuit.bind_parameters(params)
+    circuit = circuit.assign_parameters(params)
     cuts = cut_circuit_wires(
         circuit=circuit,
         method="automatic",
@@ -64,9 +64,9 @@ def generate_su2_test(num_qubits):
 
     subcircuit_instance_probabilities = run_subcircuits(individual_subcircuits)
 
-    cuts["subcircuits"] = [sc.qasm() for sc in cuts["subcircuits"]]
+    cuts["subcircuits"] = [qasm2.dumps(sc) for sc in cuts["subcircuits"]]
     cuts["complete_path_map"] = jsonpickle.encode(cuts["complete_path_map"], keys=True)
-    cuts["individual_subcircuits"] = [sc.qasm() for sc in individual_subcircuits]
+    cuts["individual_subcircuits"] = [qasm2.dumps(sc) for sc in individual_subcircuits]
     cuts["init_meas_subcircuit_map"] = jsonpickle.encode(
         init_meas_subcircuit_map, keys=True
     )
@@ -106,7 +106,7 @@ class FlaskClientTestCase(unittest.TestCase):
             "/combineResults",
             data=json.dumps(
                 {
-                    "circuit": circuit.qasm(),
+                    "circuit": qasm2.dumps(circuit),
                     "subcircuit_results": subcircuit_instance_probabilities,
                     "cuts": cuts,
                 },
@@ -130,7 +130,7 @@ class FlaskClientTestCase(unittest.TestCase):
             "/combineResultsQuokka",
             data=json.dumps(
                 {
-                    "circuit": circuit.qasm(),
+                    "circuit": qasm2.dumps(circuit),
                     "subcircuit_results": subcircuit_instance_probabilities,
                     "cuts": cuts,
                 },
