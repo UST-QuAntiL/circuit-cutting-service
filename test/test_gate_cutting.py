@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import numpy as np
 from circuit_knitting.cutting import partition_problem, generate_cutting_experiments
-from qiskit import qasm3
+from qiskit import qasm3, qasm2
 from qiskit.circuit.library import EfficientSU2
 from qiskit.quantum_info import PauliList
 from qiskit_aer.primitives import Sampler
@@ -134,7 +134,7 @@ class FlaskClientGateCuttingTestCase(unittest.TestCase):
             "/gate-cutting/combineResultsQuokka",
             data=json.dumps(
                 {
-                    "circuit": circuit.qasm(),
+                    "circuit": qasm2.dumps(circuit),
                     "subcircuit_results": results,
                     "cuts": {
                         "subcircuit_labels": subcircuit_labels,
