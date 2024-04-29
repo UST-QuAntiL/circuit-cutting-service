@@ -14,7 +14,6 @@ numpy~=1.23.5
 argschema~=3.0.4
 jsonpickle~=3.0.0
 pytest~=7.2
-symengine==0.9.2
 docplex>=2.23.222
 cplex>=22.1.0.0
 kahypar~=1.1.7
