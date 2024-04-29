@@ -48,7 +48,7 @@ def _generate_reconstruction_test(num_qubits=4, partition_labels=None, reps=2):
     circuit = circuit.decompose()
 
     params = [np.random.random() * 2 * np.pi for _ in circuit.parameters]
-    circuit = circuit.bind_parameters(params)
+    circuit = circuit.assign_parameters(params)
 
     observables = PauliList(["Z" * num_qubits])
 

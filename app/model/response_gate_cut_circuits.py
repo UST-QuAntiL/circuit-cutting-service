@@ -21,7 +21,7 @@ import codecs
 import pickle
 
 import marshmallow as ma
-from qiskit import qasm3
+from qiskit import qasm3, qasm2
 
 
 class GateCutCircuitsResponse:
@@ -36,7 +36,7 @@ class GateCutCircuitsResponse:
         super().__init__()
         if format == "openqasm2":
             self.individual_subcircuits = [
-                circ.qasm() for circ in individual_subcircuits
+                qasm2.dumps(circ) for circ in individual_subcircuits
             ]
         elif format == "openqasm3":
             self.individual_subcircuits = [
