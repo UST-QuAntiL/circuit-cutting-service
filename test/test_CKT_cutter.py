@@ -2,11 +2,15 @@ import codecs
 import json
 import pickle
 import unittest
+from collections import defaultdict
 
+import numpy as np
 from qiskit.circuit.random import random_circuit
+from qiskit_aer.primitives import Sampler
 
 from app import create_app
-from app.CKT_cutter import automatic_cut
+from app.CKT_cutter import automatic_cut, reconstruct_distribution
+from app.utils import counts_to_array
 
 
 class CutFindingTestCase(unittest.TestCase):
@@ -70,3 +74,41 @@ class FlaskClientTestCase(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
         print(response.get_json())
+
+    def test_reconstruction(self):
+        circuit = random_circuit(7, 6, max_operands=2, seed=1242)
+        cut_result = automatic_cut(circuit, 4)
+
+        individual_subcircuits = cut_result["individual_subcircuits"]
+        subcircuit_labels = cut_result["subcircuit_labels"]
+        coefficients = cut_result["coefficients"]
+        metadata = cut_result["metadata"]
+        qubit_map = metadata["qubit_map"]
+        subobservables = metadata["subobservables"]
+
+        sampler = Sampler(run_options={"shots": 2 ** 17})
+        # Retrieve results from each partition's subexperiments
+        results = sampler.run(individual_subcircuits).result()
+
+        results_dict = defaultdict(list)
+        for label, res in zip(subcircuit_labels, results.quasi_dists):
+            results_dict[label].append(res)
+
+        reconstructed_counts = reconstruct_distribution(
+            results_dict, coefficients, qubit_map, subobservables
+        )
+
+        sampler_exact = Sampler(run_options={"shots": None})
+        qc_meas = circuit.measure_all(inplace=False)
+        result_exact = sampler_exact.run(qc_meas).result()
+
+        exact_distribution = counts_to_array(
+            result_exact.quasi_dists[0],
+            result_exact.metadata[0]["simulator_metadata"]["num_qubits"],
+        )
+        reconstructed_dist = counts_to_array(reconstructed_counts, circuit.num_qubits)
+
+        self.assertTrue(
+            np.allclose(exact_distribution, reconstructed_dist, atol=0.025),
+            msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
+        )

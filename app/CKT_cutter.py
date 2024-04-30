@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+import math
+from collections import defaultdict
+from typing import Hashable, Sequence
+
 import numpy as np
 from circuit_knitting.cutting import (
     OptimizationParameters,
@@ -9,15 +15,23 @@ from circuit_knitting.cutting import (
     generate_cutting_experiments,
     partition_circuit_qubits,
 )
-from circuit_knitting.cutting.qpd import TwoQubitQPDGate
+from circuit_knitting.cutting.qpd import TwoQubitQPDGate, WeightType
 from circuit_knitting.utils.transforms import (
     _partition_labels_from_circuit,
     separate_circuit,
 )
+from qiskit.primitives import SamplerResult
 from qiskit.quantum_info import SparsePauliOp
 
+from app.gate_cutting_reconstruct_distribution import _process_outcome_distribution
 from app.model.request_cut_circuits import CutCircuitsRequest
 from app.model.response_ckt_cut_circuits import CKTCutCircuitsResponse
+from app.utils import (
+    product_dicts,
+    shift_bits_by_index,
+    find_character_in_string,
+    remove_bits,
+)
 from app.wire_cutter import _get_circuit
 
 
@@ -93,9 +107,80 @@ def automatic_cut(circuit, qubits_per_subcircuit, max_cuts=None):
     custom_metadata["partition_labels"] = partition_labels
     custom_metadata["qubit_map"] = separated_circs.qubit_map
 
+    subobservables = {}
+
+    for partition, subobs in partitioned_problem.subobservables.items():
+        subobservables[partition] = subobs.to_labels()[0]
+
+    custom_metadata["subobservables"] = subobservables
+
     return {
         "individual_subcircuits": individual_subcircuits,
         "subcircuit_labels": subcircuit_labels,
         "coefficients": coefficients,
         "metadata": custom_metadata,
     }
+
+
+def reconstruct_distribution(
+    results: dict[Hashable, SamplerResult] | dict[Hashable, list],
+    coefficients: Sequence[tuple[float, WeightType]],
+    qubit_map: Sequence[tuple[int, int]],
+    subobservables: dict[str, str],
+) -> dict[int, float]:
+    result_dict = defaultdict(float)
+    labels = []
+    # ensure order of the labels
+    for label, _ in qubit_map:
+        if label not in labels:
+            labels.append(label)
+
+    qubits = {key: len(val) for key, val in subobservables.items()}
+    observable = "".join([subobservables[l] for l in labels])
+
+    label_index_lists = defaultdict(list)
+    for ind, (label, _) in enumerate(qubit_map):
+        label_index_lists[label].append(ind)
+
+    if isinstance(results, dict) and isinstance(
+        results[next(iter(labels))], SamplerResult
+    ):
+        results = {
+            label: [results[label].quasi_dists[i] for i in range(len(coefficients))]
+            for label in labels
+        }
+
+    # Reconstruct the probability distribution
+    for i, coeff in enumerate(coefficients):
+
+        coeff_result_dict = {}
+
+        for label in labels:
+            coeff_result_dict[label] = defaultdict(float)
+            quasi_probs = results[label][i]
+            for outcome, quasi_prob in quasi_probs.items():
+                qpd_factor, meas_outcomes = _process_outcome_distribution(
+                    qubits[label], outcome
+                )
+                coeff_result_dict[label][meas_outcomes] += qpd_factor * quasi_prob
+
+        for meas_keys, quasi_prob_vals in product_dicts(
+            *list(coeff_result_dict.values())
+        ).items():
+            combined_meas = 0
+            for meas, label in zip(meas_keys, coeff_result_dict.keys()):
+                combined_meas += shift_bits_by_index(meas, label_index_lists[label])
+            result_dict[combined_meas] += coeff[0] * math.prod(quasi_prob_vals)
+
+    if not "I" in observable:
+        return result_dict
+
+    result_dict_traced_out = defaultdict(float)
+    qubits_to_trace_out = list(find_character_in_string(observable, "I"))
+    qubits_to_trace_out = [len(observable) - i - 1 for i in qubits_to_trace_out]
+
+    for meas, val in result_dict.items():
+        meas_traced_out = remove_bits(meas, qubits_to_trace_out)
+        result_dict_traced_out[meas_traced_out] += val
+
+    return result_dict_traced_out
