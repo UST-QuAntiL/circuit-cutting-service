@@ -50,9 +50,11 @@ def cut_circuit(cutting_request: CutCircuitsRequest):
     return CKTCutCircuitsResponse(format=cutting_request.circuit_format, **res)
 
 
-def automatic_cut(circuit, qubits_per_subcircuit, max_cuts=None):
+def automatic_cut(
+    circuit, qubits_per_subcircuit, max_cuts=None, optimization_seed=None
+):
     # Specify settings for the cut-finding optimizer
-    optimization_settings = OptimizationParameters(seed=111)
+    optimization_settings = OptimizationParameters(seed=optimization_seed)
 
     # Specify the size of the QPUs available
     device_constraints = DeviceConstraints(qubits_per_subcircuit=qubits_per_subcircuit)

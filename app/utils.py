@@ -123,3 +123,7 @@ def remove_bits(number, bit_positions):
         number = left_part | right_part
 
     return number
+
+
+def replace_str_index(text, index=0, replacement=""):
+    return f"{text[:index]}{replacement}{text[index+1:]}"
