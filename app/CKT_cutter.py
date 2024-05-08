@@ -137,8 +137,8 @@ def reconstruct_distribution(
         if label not in labels:
             labels.append(label)
 
-    qubits = {key: len(val) for key, val in subobservables.items()}
-    observable = "".join([subobservables[l] for l in labels])
+    qubits = {key: val.count("Z") for key, val in subobservables.items()}
+    observable = "".join([subobservables[l] for l in reversed(labels)])
 
     label_index_lists = defaultdict(list)
     for ind, (label, _) in enumerate(qubit_map):
@@ -178,8 +178,15 @@ def reconstruct_distribution(
         return result_dict
 
     result_dict_traced_out = defaultdict(float)
-    qubits_to_trace_out = list(find_character_in_string(observable, "I"))
-    qubits_to_trace_out = [len(observable) - i - 1 for i in qubits_to_trace_out]
+    qubits_to_trace_out = []
+    for label, sub_obs in subobservables.items():
+        qubits_to_trace_out_in_sub_obs = list(find_character_in_string(sub_obs, "I"))
+        qubits_to_trace_out_in_sub_obs = [
+            len(sub_obs) - i - 1 for i in qubits_to_trace_out_in_sub_obs
+        ]
+        for qubit_in_sub_obs in qubits_to_trace_out_in_sub_obs:
+            qubit = label_index_lists[label][qubit_in_sub_obs]
+            qubits_to_trace_out.append(qubit)
 
     for meas, val in result_dict.items():
         meas_traced_out = remove_bits(meas, qubits_to_trace_out)

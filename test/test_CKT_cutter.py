@@ -123,7 +123,7 @@ class FlaskClientTestCase(unittest.TestCase):
         reconstructed_dist = counts_to_array(reconstructed_counts, circuit.num_qubits)
 
         self.assertTrue(
-            np.allclose(exact_distribution, reconstructed_dist, atol=0.1),
+            np.allclose(exact_distribution, reconstructed_dist, atol=0.01),
             msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
         )
 
@@ -138,11 +138,11 @@ class FlaskClientTestCase(unittest.TestCase):
         circuit.cx(2, 1)
         circuit.cx(1, 0)
 
-        exact_expval_list, actual_expval_list = get_expals(circuit, 2 ** 12)
+        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
 
         self.assertTrue(
             np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
+            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
         )
 
     def test_reconstruction_3(self):
@@ -156,35 +156,35 @@ class FlaskClientTestCase(unittest.TestCase):
         circuit.cx(2, 1)
         circuit.cx(1, 0)
 
-        exact_expval_list, actual_expval_list = get_expals(circuit, 2 ** 12)
+        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
 
         self.assertTrue(
             np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
-        )
-
-    def test_reconstruction_3(self):
-
-        circuit = QuantumCircuit(4)
-        circuit.h(0)
-        circuit.cx(0, 1)
-        circuit.cx(1, 2)
-        circuit.cx(2, 3)
-        circuit.cx(3, 2)
-        circuit.cx(2, 1)
-        circuit.cx(1, 0)
-
-        exact_expval_list, actual_expval_list = get_expals(circuit, 2 ** 12)
-
-        self.assertTrue(
-            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
+            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
         )
 
     def test_reconstruction_4(self):
 
+        circuit = QuantumCircuit(4)
+        circuit.h(0)
+        circuit.cx(0, 1)
+        circuit.cx(1, 2)
+        circuit.cx(2, 3)
+        circuit.cx(3, 2)
+        circuit.cx(2, 1)
+        circuit.cx(1, 0)
+
+        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
+
+        self.assertTrue(
+            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
+            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
+        )
+
+    def test_reconstruction_5(self):
+
         circuit = QuantumCircuit(5)
-        circuit.x(0)
+        circuit.h(0)
         circuit.cx(0, 1)
         circuit.cx(1, 2)
         circuit.cx(1, 0)
@@ -193,11 +193,28 @@ class FlaskClientTestCase(unittest.TestCase):
         circuit.cx(3, 4)
         circuit.cx(2, 4)
 
-        exact_expval_list, actual_expval_list = get_expals(circuit, 2 ** 12)
+        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
 
         self.assertTrue(
             np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
+            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
+        )
+
+    def test_reconstruction_6(self):
+
+        circuit = QuantumCircuit(4)
+        circuit.x(0)
+        circuit.cx(0, 1)
+        circuit.cx(1, 2)
+        circuit.cx(3, 2)
+        circuit.cx(2, 1)
+        circuit.cx(1, 0)
+
+        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
+
+        self.assertTrue(
+            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
+            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
         )
 
 
@@ -247,4 +264,4 @@ def get_expals(circuit, shots):
         exact_expval = estimator.run([(circuit, observable.paulis[i])]).result()
         exact_expval_list.append(exact_expval[0].data.evs)
 
-    return exact_expval_list, actual_expval_list
+    return exact_expval_list, actual_expval_list, observable

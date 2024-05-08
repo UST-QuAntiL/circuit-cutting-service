@@ -50,11 +50,12 @@ def _process_outcome_distribution(
         A tuple with the QPD factor in the measurement outcome
     """
     outcome = _outcome_to_int(outcome)
+    # remove outcome of mid-circuit measurements
     meas_outcomes = outcome & ((1 << num_meas_bits) - 1)
     qpd_outcomes = outcome >> num_meas_bits
 
     # qpd_factor will be -1 or +1, depending on the overall parity of qpd
-    # measurements.
+    # measurements, thereby it accounts for mid-circuit measurements
     qpd_factor = 1 - 2 * (bit_count(qpd_outcomes) & 1)
 
     return qpd_factor, meas_outcomes
