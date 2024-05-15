@@ -24,13 +24,16 @@ from qiskit.primitives import SamplerResult
 from qiskit.quantum_info import SparsePauliOp
 
 from app.gate_cutting_reconstruct_distribution import _process_outcome_distribution
+from app.model.request_combine_results import CombineResultsRequest
 from app.model.request_cut_circuits import CutCircuitsRequest
 from app.model.response_ckt_cut_circuits import CKTCutCircuitsResponse
+from app.model.response_combine_results import CombineResultsResponse
 from app.utils import (
     product_dicts,
     shift_bits_by_index,
     find_character_in_string,
     remove_bits,
+    counts_to_array,
 )
 from app.wire_cutter import _get_circuit
 
@@ -193,3 +196,29 @@ def reconstruct_distribution(
         result_dict_traced_out[meas_traced_out] += val
 
     return result_dict_traced_out
+
+
+def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
+    subcircuit_results_dict = defaultdict(list)
+    for label, res in zip(
+        input_dict.cuts["subcircuit_labels"], input_dict.subcircuit_results
+    ):
+        subcircuit_results_dict[label].append(res)
+
+    result = reconstruct_distribution(
+        subcircuit_results_dict,
+        input_dict.cuts["coefficients"],
+        input_dict.cuts["metadata"]["qubit_map"],
+        input_dict.cuts["metadata"]["subobservables"],
+    )
+    num_qubits = 0
+    for key, val in input_dict.cuts["metadata"]["subobservables"].items():
+        num_qubits += val.count("Z")
+    if not quokka_format:
+        result = counts_to_array(result, num_qubits)
+    else:
+        result = {
+            "{0:b}".format(key).zfill(num_qubits): val for key, val in result.items()
+        }
+
+    return CombineResultsResponse(result=result)

@@ -1,8 +1,13 @@
 from flask_smorest import Blueprint
 
 from app import CKT_cutter
+from app.model.request_combine_results import (
+    CombineResultsRequest,
+    CombineResultsRequestQuokkaSchema,
+)
 from app.model.request_cut_circuits import CutCircuitsRequestSchema, CutCircuitsRequest
 from app.model.response_ckt_cut_circuits import CKTCutCircuitsResponseSchema
+from app.model.response_combine_results import CombineResultsResponseQuokkaSchema
 
 blp_ckt_cutting = Blueprint(
     "ckt-cutting",
@@ -29,3 +34,14 @@ def gate_cut_circuit(json: dict):
     result = CKT_cutter.cut_circuit(CutCircuitsRequest(**json))
     print("result", result)
     return result
+
+
+@blp_ckt_cutting.route("/gate-cutting/combineResultsQuokka", methods=["POST"])
+@blp_ckt_cutting.arguments(CombineResultsRequestQuokkaSchema)
+@blp_ckt_cutting.response(200, CombineResultsResponseQuokkaSchema)
+def combine_results(json: dict):
+    """Recombine the results of the subcircuits from the ckt cut."""
+    print("request combine", json)
+    return CKT_cutter.reconstruct_result(
+        CombineResultsRequest(**json), quokka_format=True
+    )

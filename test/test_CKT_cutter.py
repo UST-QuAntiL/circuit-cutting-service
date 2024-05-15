@@ -5,22 +5,10 @@ import unittest
 from collections import defaultdict
 
 import numpy as np
-from circuit_knitting.cutting import (
-    DeviceConstraints,
-    OptimizationParameters,
-    find_cuts,
-    cut_wires,
-    expand_observables,
-    partition_problem,
-    generate_cutting_experiments,
-    reconstruct_expectation_values,
-)
 from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
 from qiskit.quantum_info import SparsePauliOp
-from qiskit_aer import AerSimulator
 from qiskit_aer.primitives import Sampler, EstimatorV2
-from qiskit_ibm_runtime.qiskit.primitives import BackendSamplerV2
 
 from app import create_app
 from app.CKT_cutter import automatic_cut, reconstruct_distribution
