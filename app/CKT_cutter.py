@@ -140,6 +140,10 @@ def reconstruct_distribution(
         if label not in labels:
             labels.append(label)
 
+    if isinstance(labels[0], int):
+        subobservables = {int(key): val for key, val in subobservables.items()}
+        results = {int(key): val for key, val in results.items()}
+
     qubits = {key: val.count("Z") for key, val in subobservables.items()}
     observable = "".join([subobservables[l] for l in reversed(labels)])
 

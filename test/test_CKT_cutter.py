@@ -5,7 +5,7 @@ import unittest
 from collections import defaultdict
 
 import numpy as np
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, qasm2
 from qiskit.circuit.random import random_circuit
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer.primitives import Sampler, EstimatorV2
@@ -13,6 +13,7 @@ from qiskit_aer.primitives import Sampler, EstimatorV2
 from app import create_app
 from app.CKT_cutter import automatic_cut, reconstruct_distribution
 from app.utils import counts_to_array, replace_str_index
+from test.test_reconstruction import NumpyEncoder
 
 
 class CutFindingTestCase(unittest.TestCase):
@@ -114,6 +115,60 @@ class FlaskClientTestCase(unittest.TestCase):
             np.allclose(exact_distribution, reconstructed_dist, atol=0.01),
             msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
         )
+
+    def test_reconstruction_request(self):
+        num_qubits = 7
+        circuit = random_circuit(num_qubits, 6, max_operands=2, seed=1242)
+        cut_result = automatic_cut(circuit, 4)
+
+        individual_subcircuits = cut_result["individual_subcircuits"]
+        subcircuit_labels = cut_result["subcircuit_labels"]
+        coefficients = cut_result["coefficients"]
+        metadata = cut_result["metadata"]
+        qubit_map = metadata["qubit_map"]
+        subobservables = metadata["subobservables"]
+
+        sampler = Sampler(run_options={"shots": 2 ** 15})
+        # Retrieve results from each partition's subexperiments
+        results_sampler = sampler.run(individual_subcircuits).result()
+
+        results = [
+            {"{0:b}".format(key): val for key, val in res.items()}
+            for res in results_sampler.quasi_dists
+        ]
+
+        results_dict = defaultdict(list)
+        for label, res in zip(subcircuit_labels, results_sampler.quasi_dists):
+            results_dict[label].append(res)
+
+        reconstructed_counts = reconstruct_distribution(
+            results_dict, coefficients, qubit_map, subobservables
+        )
+        expected_result = {
+            "{0:b}".format(key).zfill(num_qubits): val
+            for key, val in reconstructed_counts.items()
+        }
+
+        response = self.client.post(
+            "/ctk/combineResultsQuokka",
+            data=json.dumps(
+                {
+                    "circuit": qasm2.dumps(circuit),
+                    "subcircuit_results": results,
+                    "cuts": {
+                        "subcircuit_labels": subcircuit_labels,
+                        "coefficients": [(c, w.value) for c, w in coefficients],
+                        "metadata": metadata,
+                    },
+                },
+                cls=NumpyEncoder,
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        actual_result = response.get_json()["result"]
+        self.assertDictEqual(actual_result, expected_result)
 
     def test_reconstruction_2(self):
 

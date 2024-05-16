@@ -36,7 +36,7 @@ def gate_cut_circuit(json: dict):
     return result
 
 
-@blp_ckt_cutting.route("/gate-cutting/combineResultsQuokka", methods=["POST"])
+@blp_ckt_cutting.route("/ctk/combineResultsQuokka", methods=["POST"])
 @blp_ckt_cutting.arguments(CombineResultsRequestQuokkaSchema)
 @blp_ckt_cutting.response(200, CombineResultsResponseQuokkaSchema)
 def combine_results(json: dict):
