@@ -98,3 +98,32 @@ def product_dicts(*dicts):
         for prod_key, prod_val in product_except_last.items()
         for key, val in last_dict.items()
     }
+
+
+def remove_bits(number, bit_positions):
+    """
+    Removes multiple bits from the binary representation of an integer at specified positions.
+
+    :param number: The integer from which bits will be removed.
+    :param bit_positions: A list of positions of the bits to remove, where 0 is the least significant bit.
+    :return: The integer resulting from the removal of the specified bits.
+    """
+    for bit_position in sorted(bit_positions, reverse=True):
+        # Create a mask with all bits set except the bit at 'bit_position'
+        mask = ~(1 << bit_position)
+
+        # Apply the mask to the number using bitwise AND
+        new_number = number & mask
+
+        # Shift the bits to the right of 'bit_position' one place to the left
+        right_part = number & ((1 << bit_position) - 1)
+        left_part = (new_number >> (bit_position + 1)) << bit_position
+
+        # Combine the left and right parts
+        number = left_part | right_part
+
+    return number
+
+
+def replace_str_index(text, index=0, replacement=""):
+    return f"{text[:index]}{replacement}{text[index+1:]}"
