@@ -5,20 +5,21 @@ import unittest
 from collections import defaultdict
 
 import numpy as np
-from qiskit import QuantumCircuit, qasm2
-from qiskit.circuit.random import random_circuit
+from parameterized import parameterized
+from qiskit import qasm2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_aer.primitives import Sampler, EstimatorV2
 
 from app import create_app
 from app.CKT_cutter import automatic_cut, reconstruct_distribution
 from app.utils import counts_to_array, replace_str_index
+from test.test_circuits import circuit_1, circuit_2, circuit_3, circuit_4, circuit_5
 from test.test_reconstruction import NumpyEncoder
 
 
 class CutFindingTestCase(unittest.TestCase):
     def test_automatic_cut(self):
-        circuit = random_circuit(7, 6, max_operands=2, seed=1242)
+        circuit = circuit_1()
         result = automatic_cut(circuit, 4)
         self.assertTrue(len(result["individual_subcircuits"]) > 0)
         self.assertTrue(
@@ -26,7 +27,7 @@ class CutFindingTestCase(unittest.TestCase):
         )
 
     def test_automatic_cut_exception(self):
-        circuit = random_circuit(7, 6, max_operands=2, seed=1242)
+        circuit = circuit_1()
         self.assertRaises(Exception, automatic_cut, circuit, 4, 0)
 
 
@@ -59,7 +60,7 @@ class FlaskClientTestCase(unittest.TestCase):
         print(response.get_json())
 
     def test_automatic_cutting_2(self):
-        circuit = random_circuit(7, 6, max_operands=2, seed=1242)
+        circuit = circuit_1()
         pickle_bytes = codecs.encode(pickle.dumps(circuit), "base64").decode()
         response = self.client.post(
             "/ckt/cutCircuits",
@@ -78,47 +79,8 @@ class FlaskClientTestCase(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         print(response.get_json())
 
-    def test_reconstruction(self):
-        circuit = random_circuit(7, 6, max_operands=2, seed=1242)
-        cut_result = automatic_cut(circuit, 4)
-
-        individual_subcircuits = cut_result["individual_subcircuits"]
-        subcircuit_labels = cut_result["subcircuit_labels"]
-        coefficients = cut_result["coefficients"]
-        metadata = cut_result["metadata"]
-        qubit_map = metadata["qubit_map"]
-        subobservables = metadata["subobservables"]
-
-        sampler = Sampler(run_options={"shots": 2 ** 17})
-        # Retrieve results from each partition's subexperiments
-        results = sampler.run(individual_subcircuits).result()
-
-        results_dict = defaultdict(list)
-        for label, res in zip(subcircuit_labels, results.quasi_dists):
-            results_dict[label].append(res)
-
-        reconstructed_counts = reconstruct_distribution(
-            results_dict, coefficients, qubit_map, subobservables
-        )
-
-        sampler_exact = Sampler(run_options={"shots": None})
-        qc_meas = circuit.measure_all(inplace=False)
-        result_exact = sampler_exact.run(qc_meas).result()
-
-        exact_distribution = counts_to_array(
-            result_exact.quasi_dists[0],
-            result_exact.metadata[0]["simulator_metadata"]["num_qubits"],
-        )
-        reconstructed_dist = counts_to_array(reconstructed_counts, circuit.num_qubits)
-
-        self.assertTrue(
-            np.allclose(exact_distribution, reconstructed_dist, atol=0.01),
-            msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
-        )
-
     def test_reconstruction_request(self):
-        num_qubits = 7
-        circuit = random_circuit(num_qubits, 6, max_operands=2, seed=1242)
+        circuit = circuit_1()
         cut_result = automatic_cut(circuit, 4)
 
         individual_subcircuits = cut_result["individual_subcircuits"]
@@ -145,7 +107,7 @@ class FlaskClientTestCase(unittest.TestCase):
             results_dict, coefficients, qubit_map, subobservables
         )
         expected_result = {
-            "{0:b}".format(key).zfill(num_qubits): val
+            "{0:b}".format(key).zfill(circuit.num_qubits()): val
             for key, val in reconstructed_counts.items()
         }
 
@@ -170,141 +132,102 @@ class FlaskClientTestCase(unittest.TestCase):
         actual_result = response.get_json()["result"]
         self.assertDictEqual(actual_result, expected_result)
 
-    def test_reconstruction_2(self):
 
-        circuit = QuantumCircuit(4)
-        circuit.x(0)
-        circuit.cx(0, 1)
-        circuit.cx(1, 2)
-        circuit.cx(2, 3)
-        circuit.cx(3, 2)
-        circuit.cx(2, 1)
-        circuit.cx(1, 0)
-
-        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
-
-        self.assertTrue(
-            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
-        )
-
-    def test_reconstruction_3(self):
-
-        circuit = QuantumCircuit(4)
-        circuit.h(0)
-        circuit.cx(0, 1)
-        circuit.cx(1, 2)
-        circuit.cx(2, 3)
-        circuit.cx(3, 2)
-        circuit.cx(2, 1)
-        circuit.cx(1, 0)
-
-        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
-
-        self.assertTrue(
-            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
-        )
-
-    def test_reconstruction_4(self):
-
-        circuit = QuantumCircuit(4)
-        circuit.h(0)
-        circuit.cx(0, 1)
-        circuit.cx(1, 2)
-        circuit.cx(2, 3)
-        circuit.cx(3, 2)
-        circuit.cx(2, 1)
-        circuit.cx(1, 0)
-
-        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
-
-        self.assertTrue(
-            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
-        )
-
-    def test_reconstruction_5(self):
-
-        circuit = QuantumCircuit(5)
-        circuit.h(0)
-        circuit.cx(0, 1)
-        circuit.cx(1, 2)
-        circuit.cx(1, 0)
-        circuit.cx(2, 0)
-        circuit.cx(2, 3)
-        circuit.cx(3, 4)
-        circuit.cx(2, 4)
-
-        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
-
-        self.assertTrue(
-            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
-        )
-
-    def test_reconstruction_6(self):
-
-        circuit = QuantumCircuit(4)
-        circuit.x(0)
-        circuit.cx(0, 1)
-        circuit.cx(1, 2)
-        circuit.cx(3, 2)
-        circuit.cx(2, 1)
-        circuit.cx(1, 0)
-
-        exact_expval_list, actual_expval_list, observable = get_expals(circuit, 2 ** 12)
-
-        self.assertTrue(
-            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
-            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
-        )
-
-
-def get_expals(circuit, shots):
-    n_qubits = circuit.num_qubits
-    i_string = "I" * n_qubits
-
-    observable = SparsePauliOp(
-        [replace_str_index(i_string, i, "Z") for i in range(n_qubits - 1, -1, -1)]
+class ReconstructionTestCase(unittest.TestCase):
+    @parameterized.expand(
+        [
+            (circuit_1(), 2 ** 17),
+            (circuit_2(), 2 ** 15),
+            (circuit_3(), 2 ** 15),
+            (circuit_4(), 2 ** 15),
+            (circuit_5(), 2 ** 15),
+        ]
     )
+    def test_reconstruction(self, circuit, shots=2 ** 15):
+        n_qubits = circuit.num_qubits
+        cut_result = automatic_cut(circuit, (n_qubits // 2) + (n_qubits % 2))
+        individual_subcircuits = cut_result["individual_subcircuits"]
+        subcircuit_labels = cut_result["subcircuit_labels"]
+        coefficients = cut_result["coefficients"]
+        metadata = cut_result["metadata"]
+        qubit_map = metadata["qubit_map"]
+        subobservables = metadata["subobservables"]
 
-    qubits_per_subcircuit = (n_qubits // 2) + (n_qubits % 2)
-    optimization_seed = 111
+        sampler = Sampler(run_options={"shots": shots})
+        # Retrieve results from each partition's subexperiments
+        results = sampler.run(individual_subcircuits).result()
 
-    cut_result = automatic_cut(
-        circuit, qubits_per_subcircuit, optimization_seed=optimization_seed
-    )
+        results_dict = defaultdict(list)
+        for label, res in zip(subcircuit_labels, results.quasi_dists):
+            results_dict[label].append(res)
 
-    individual_subcircuits = cut_result["individual_subcircuits"]
-    subcircuit_labels = cut_result["subcircuit_labels"]
-    coefficients = cut_result["coefficients"]
-    metadata = cut_result["metadata"]
-    qubit_map = metadata["qubit_map"]
-    subobservables = metadata["subobservables"]
+        reconstructed_counts = reconstruct_distribution(
+            results_dict, coefficients, qubit_map, subobservables
+        )
 
-    sampler = Sampler(run_options={"shots": shots})
-    # Retrieve results from each partition's subexperiments
-    results = sampler.run(individual_subcircuits).result()
+        sampler_exact = Sampler(run_options={"shots": None})
+        qc_meas = circuit.measure_all(inplace=False)
+        result_exact = sampler_exact.run(qc_meas).result()
 
-    results_dict = defaultdict(list)
-    for label, res in zip(subcircuit_labels, results.quasi_dists):
-        results_dict[label].append(res)
+        exact_distribution = counts_to_array(
+            result_exact.quasi_dists[0],
+            result_exact.metadata[0]["simulator_metadata"]["num_qubits"],
+        )
+        reconstructed_dist = counts_to_array(reconstructed_counts, circuit.num_qubits)
 
-    reconstructed_counts = reconstruct_distribution(
-        results_dict, coefficients, qubit_map, subobservables
-    )
+        self.assertTrue(
+            np.allclose(exact_distribution, reconstructed_dist, atol=0.01),
+            msg=f"\nExact distribution: {exact_distribution}\nReconstruced distribution: {reconstructed_dist}\nDiff: {np.abs(exact_distribution- reconstructed_dist)}",
+        )
 
-    estimator = EstimatorV2()
+    @parameterized.expand([circuit_2(), circuit_3(), circuit_4(), circuit_5()])
+    def test_reconstruction_expectation(self, circuit):
+        shots = 2 ** 12
+        n_qubits = circuit.num_qubits
+        i_string = "I" * n_qubits
 
-    actual_expval_list = []
-    exact_expval_list = []
-    for i in range(n_qubits):
-        actual_expval = 0
-        for meas, count in reconstructed_counts.items():
-            actual_expval += (-1) ** ((meas >> i) % 2) * count
-        actual_expval_list.append(actual_expval)
-        exact_expval = estimator.run([(circuit, observable.paulis[i])]).result()
-        exact_expval_list.append(exact_expval[0].data.evs)
+        observable = SparsePauliOp(
+            [replace_str_index(i_string, i, "Z") for i in range(n_qubits - 1, -1, -1)]
+        )
 
-    return exact_expval_list, actual_expval_list, observable
+        qubits_per_subcircuit = (n_qubits // 2) + (n_qubits % 2)
+        optimization_seed = 111
+
+        cut_result = automatic_cut(
+            circuit, qubits_per_subcircuit, optimization_seed=optimization_seed
+        )
+
+        individual_subcircuits = cut_result["individual_subcircuits"]
+        subcircuit_labels = cut_result["subcircuit_labels"]
+        coefficients = cut_result["coefficients"]
+        metadata = cut_result["metadata"]
+        qubit_map = metadata["qubit_map"]
+        subobservables = metadata["subobservables"]
+
+        sampler = Sampler(run_options={"shots": shots})
+        # Retrieve results from each partition's subexperiments
+        results = sampler.run(individual_subcircuits).result()
+
+        results_dict = defaultdict(list)
+        for label, res in zip(subcircuit_labels, results.quasi_dists):
+            results_dict[label].append(res)
+
+        reconstructed_counts = reconstruct_distribution(
+            results_dict, coefficients, qubit_map, subobservables
+        )
+
+        estimator = EstimatorV2()
+
+        actual_expval_list = []
+        exact_expval_list = []
+        for i in range(n_qubits):
+            actual_expval = 0
+            for meas, count in reconstructed_counts.items():
+                actual_expval += (-1) ** ((meas >> i) % 2) * count
+            actual_expval_list.append(actual_expval)
+            exact_expval = estimator.run([(circuit, observable.paulis[i])]).result()
+            exact_expval_list.append(exact_expval[0].data.evs)
+        self.assertTrue(
+            np.allclose(exact_expval_list, actual_expval_list, atol=0.1),
+            msg=f"\nEObservables: {observable.paulis}\nExact expectations: {exact_expval_list}\nReconstruced expectations: {actual_expval_list}",
+        )
