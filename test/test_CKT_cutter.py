@@ -133,8 +133,8 @@ class FlaskClientTestCase(unittest.TestCase):
         results_sampler = sampler.run(individual_subcircuits).result()
 
         results = [
-            {"{0:b}".format(key): val for key, val in res.items()}
-            for res in results_sampler.quasi_dists
+            {format(key, f"0{c.num_clbits}b"): val for key, val in res.items()}
+            for c, res in zip(individual_subcircuits, results_sampler.quasi_dists)
         ]
 
         results_dict = defaultdict(list)
