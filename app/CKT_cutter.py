@@ -56,47 +56,28 @@ def cut_circuit(cutting_request: CutCircuitsRequest):
 def automatic_cut(
     circuit, qubits_per_subcircuit, max_cuts=None, optimization_seed=None
 ):
-    # Specify settings for the cut-finding optimizer
     optimization_settings = OptimizationParameters(seed=optimization_seed)
-
-    # Specify the size of the QPUs available
     device_constraints = DeviceConstraints(qubits_per_subcircuit=qubits_per_subcircuit)
 
-    try:
-        cut_circuit, metadata = find_cuts(
-            circuit, optimization_settings, device_constraints
-        )
-    except ValueError:
-        cut_circuit, metadata = find_cuts(
-            circuit.decompose(), optimization_settings, device_constraints
-        )
+    cut_circuit, metadata = _find_cuts(
+        circuit, optimization_settings, device_constraints
+    )
 
-    if max_cuts is not None:
-        if len(metadata["cuts"]) > max_cuts:
-            raise Exception(
-                "More than the specified maximum number of cuts are required"
-            )
+    if max_cuts is not None and len(metadata["cuts"]) > max_cuts:
+        raise Exception("More than the specified maximum number of cuts are required")
 
     observable = SparsePauliOp(["Z" * circuit.num_qubits])
-
     qc_w_ancilla = cut_wires(cut_circuit)
     observables_expanded = expand_observables(observable.paulis, circuit, qc_w_ancilla)
-    partitioned_problem = partition_problem(
-        circuit=qc_w_ancilla, observables=observables_expanded
-    )
+    partitioned_problem = _partition_problem(qc_w_ancilla, observables_expanded)
+
     subexperiments, coefficients = generate_cutting_experiments(
         circuits=partitioned_problem.subcircuits,
         observables=partitioned_problem.subobservables,
         num_samples=np.inf,
     )
 
-    individual_subcircuits = []
-    subcircuit_labels = []
-
-    for label, circs in subexperiments.items():
-        for sub_circ in circs:
-            individual_subcircuits.append(sub_circ)
-            subcircuit_labels.append(label)
+    individual_subcircuits, subcircuit_labels = _extract_subcircuits(subexperiments)
 
     partition_labels = _partition_labels_from_circuit(
         qc_w_ancilla,
@@ -107,17 +88,12 @@ def automatic_cut(
     qpd_circuit_dx = qpd_circuit.decompose(TwoQubitQPDGate)
     separated_circs = separate_circuit(qpd_circuit_dx, partition_labels)
 
-    custom_metadata = {}
-    custom_metadata.update(**metadata)
-    custom_metadata["partition_labels"] = partition_labels
-    custom_metadata["qubit_map"] = separated_circs.qubit_map
-
-    subobservables = {}
-
-    for partition, subobs in partitioned_problem.subobservables.items():
-        subobservables[partition] = subobs.to_labels()[0]
-
-    custom_metadata["subobservables"] = subobservables
+    custom_metadata = _create_custom_metadata(
+        metadata,
+        partition_labels,
+        separated_circs.qubit_map,
+        partitioned_problem.subobservables,
+    )
 
     return {
         "individual_subcircuits": individual_subcircuits,
@@ -125,6 +101,42 @@ def automatic_cut(
         "coefficients": coefficients,
         "metadata": custom_metadata,
     }
+
+
+def _find_cuts(circuit, optimization_settings, device_constraints):
+    try:
+        return find_cuts(circuit, optimization_settings, device_constraints)
+    except ValueError:
+        return find_cuts(circuit.decompose(), optimization_settings, device_constraints)
+
+
+def _partition_problem(qc_w_ancilla, observables_expanded):
+    return partition_problem(circuit=qc_w_ancilla, observables=observables_expanded)
+
+
+def _extract_subcircuits(subexperiments):
+    individual_subcircuits = []
+    subcircuit_labels = []
+
+    for label, circs in subexperiments.items():
+        for sub_circ in circs:
+            individual_subcircuits.append(sub_circ)
+            subcircuit_labels.append(label)
+
+    return individual_subcircuits, subcircuit_labels
+
+
+def _create_custom_metadata(metadata, partition_labels, qubit_map, subobservables):
+    custom_metadata = {
+        **metadata,
+        "partition_labels": partition_labels,
+        "qubit_map": qubit_map,
+        "subobservables": {
+            partition: subobs.to_labels()[0]
+            for partition, subobs in subobservables.items()
+        },
+    }
+    return custom_metadata
 
 
 def reconstruct_distribution(
