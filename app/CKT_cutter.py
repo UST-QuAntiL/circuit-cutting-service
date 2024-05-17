@@ -103,6 +103,88 @@ def automatic_cut(
     }
 
 
+def reconstruct_distribution(
+    results: dict[Hashable, SamplerResult] | dict[Hashable, list],
+    coefficients: Sequence[tuple[float, WeightType]],
+    qubit_map: Sequence[tuple[int, int]],
+    subobservables: dict[str, str],
+) -> dict[int, float]:
+    result_dict = defaultdict(float)
+    labels = _order_labels(qubit_map)
+
+    if isinstance(labels[0], int):
+        subobservables = {int(key): val for key, val in subobservables.items()}
+        results = {int(key): val for key, val in results.items()}
+
+    qubits = _count_qubits_per_label(subobservables)
+    observable = "".join([subobservables[l] for l in reversed(labels)])
+
+    label_index_lists = defaultdict(list)
+    for ind, (label, _) in enumerate(qubit_map):
+        label_index_lists[label].append(ind)
+
+    if isinstance(results, dict) and isinstance(
+        results[next(iter(labels))], SamplerResult
+    ):
+        results = {
+            label: [results[label].quasi_dists[i] for i in range(len(coefficients))]
+            for label in labels
+        }
+
+    # Reconstruct the probability distribution
+    for i, coeff in enumerate(coefficients):
+
+        coeff_result_dict = {}
+
+        for label in labels:
+            coeff_result_dict[label] = defaultdict(float)
+            quasi_probs = results[label][i]
+            for outcome, quasi_prob in quasi_probs.items():
+                qpd_factor, meas_outcomes = _process_outcome_distribution(
+                    qubits[label], outcome
+                )
+                coeff_result_dict[label][meas_outcomes] += qpd_factor * quasi_prob
+
+        for meas_keys, quasi_prob_vals in product_dicts(
+            *list(coeff_result_dict.values())
+        ).items():
+            combined_meas = _calculate_combined_measurement(
+                meas_keys, coeff_result_dict, label_index_lists
+            )
+            result_dict[combined_meas] += coeff[0] * math.prod(quasi_prob_vals)
+
+    if not "I" in observable:
+        return result_dict
+
+    return _trace_out_qubits(result_dict, subobservables, label_index_lists)
+
+
+def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
+    subcircuit_results_dict = defaultdict(list)
+    for label, res in zip(
+        input_dict.cuts["subcircuit_labels"], input_dict.subcircuit_results
+    ):
+        subcircuit_results_dict[label].append(res)
+
+    result = reconstruct_distribution(
+        subcircuit_results_dict,
+        input_dict.cuts["coefficients"],
+        input_dict.cuts["metadata"]["qubit_map"],
+        input_dict.cuts["metadata"]["subobservables"],
+    )
+    num_qubits = 0
+    for key, val in input_dict.cuts["metadata"]["subobservables"].items():
+        num_qubits += val.count("Z")
+    if not quokka_format:
+        result = counts_to_array(result, num_qubits)
+    else:
+        result = {
+            "{0:b}".format(key).zfill(num_qubits): val for key, val in result.items()
+        }
+
+    return CombineResultsResponse(result=result)
+
+
 def _find_cuts(circuit, optimization_settings, device_constraints):
     try:
         return find_cuts(circuit, optimization_settings, device_constraints)
@@ -139,63 +221,26 @@ def _create_custom_metadata(metadata, partition_labels, qubit_map, subobservable
     return custom_metadata
 
 
-def reconstruct_distribution(
-    results: dict[Hashable, SamplerResult] | dict[Hashable, list],
-    coefficients: Sequence[tuple[float, WeightType]],
-    qubit_map: Sequence[tuple[int, int]],
-    subobservables: dict[str, str],
-) -> dict[int, float]:
-    result_dict = defaultdict(float)
+def _order_labels(qubit_map):
     labels = []
-    # ensure order of the labels
     for label, _ in qubit_map:
         if label not in labels:
             labels.append(label)
+    return labels
 
-    if isinstance(labels[0], int):
-        subobservables = {int(key): val for key, val in subobservables.items()}
-        results = {int(key): val for key, val in results.items()}
 
-    qubits = {key: val.count("Z") for key, val in subobservables.items()}
-    observable = "".join([subobservables[l] for l in reversed(labels)])
+def _count_qubits_per_label(subobservables):
+    return {key: val.count("Z") for key, val in subobservables.items()}
 
-    label_index_lists = defaultdict(list)
-    for ind, (label, _) in enumerate(qubit_map):
-        label_index_lists[label].append(ind)
 
-    if isinstance(results, dict) and isinstance(
-        results[next(iter(labels))], SamplerResult
-    ):
-        results = {
-            label: [results[label].quasi_dists[i] for i in range(len(coefficients))]
-            for label in labels
-        }
+def _calculate_combined_measurement(meas_keys, coeff_result_dict, label_index_lists):
+    combined_meas = 0
+    for meas, label in zip(meas_keys, coeff_result_dict.keys()):
+        combined_meas += shift_bits_by_index(meas, label_index_lists[label])
+    return combined_meas
 
-    # Reconstruct the probability distribution
-    for i, coeff in enumerate(coefficients):
 
-        coeff_result_dict = {}
-
-        for label in labels:
-            coeff_result_dict[label] = defaultdict(float)
-            quasi_probs = results[label][i]
-            for outcome, quasi_prob in quasi_probs.items():
-                qpd_factor, meas_outcomes = _process_outcome_distribution(
-                    qubits[label], outcome
-                )
-                coeff_result_dict[label][meas_outcomes] += qpd_factor * quasi_prob
-
-        for meas_keys, quasi_prob_vals in product_dicts(
-            *list(coeff_result_dict.values())
-        ).items():
-            combined_meas = 0
-            for meas, label in zip(meas_keys, coeff_result_dict.keys()):
-                combined_meas += shift_bits_by_index(meas, label_index_lists[label])
-            result_dict[combined_meas] += coeff[0] * math.prod(quasi_prob_vals)
-
-    if not "I" in observable:
-        return result_dict
-
+def _trace_out_qubits(result_dict, subobservables, label_index_lists):
     result_dict_traced_out = defaultdict(float)
     qubits_to_trace_out = []
     for label, sub_obs in subobservables.items():
@@ -210,31 +255,4 @@ def reconstruct_distribution(
     for meas, val in result_dict.items():
         meas_traced_out = remove_bits(meas, qubits_to_trace_out)
         result_dict_traced_out[meas_traced_out] += val
-
     return result_dict_traced_out
-
-
-def reconstruct_result(input_dict: CombineResultsRequest, quokka_format=False):
-    subcircuit_results_dict = defaultdict(list)
-    for label, res in zip(
-        input_dict.cuts["subcircuit_labels"], input_dict.subcircuit_results
-    ):
-        subcircuit_results_dict[label].append(res)
-
-    result = reconstruct_distribution(
-        subcircuit_results_dict,
-        input_dict.cuts["coefficients"],
-        input_dict.cuts["metadata"]["qubit_map"],
-        input_dict.cuts["metadata"]["subobservables"],
-    )
-    num_qubits = 0
-    for key, val in input_dict.cuts["metadata"]["subobservables"].items():
-        num_qubits += val.count("Z")
-    if not quokka_format:
-        result = counts_to_array(result, num_qubits)
-    else:
-        result = {
-            "{0:b}".format(key).zfill(num_qubits): val for key, val in result.items()
-        }
-
-    return CombineResultsResponse(result=result)
