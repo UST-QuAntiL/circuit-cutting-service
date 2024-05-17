@@ -107,7 +107,7 @@ class FlaskClientTestCase(unittest.TestCase):
             results_dict, coefficients, qubit_map, subobservables
         )
         expected_result = {
-            "{0:b}".format(key).zfill(circuit.num_qubits()): val
+            "{0:b}".format(key).zfill(circuit.num_qubits): val
             for key, val in reconstructed_counts.items()
         }
 
