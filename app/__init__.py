@@ -20,6 +20,7 @@
 from flask import Flask
 import logging
 
+from app.routes_ckt_cutting import blp_ckt_cutting
 from app.routes_gate_cutting import blp_gate_cutting
 from config import config
 from flask_smorest import Api
@@ -35,6 +36,7 @@ def create_app(config_name):
     api = Api(app)
     api.register_blueprint(blp)
     api.register_blueprint(blp_gate_cutting)
+    api.register_blueprint(blp_ckt_cutting)
 
     @app.route("/")
     def heartbeat():
