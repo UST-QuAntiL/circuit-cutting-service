@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster
+FROM python:3.9.0-slim-buster
 
 # Set the environment variable PYTHONUNBUFFERED to prevent Python from buffering stdout and stderr
 ENV PYTHONUNBUFFERED=1

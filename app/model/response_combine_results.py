@@ -27,7 +27,7 @@ class CombineResultsResponse:
         super().__init__()
         self.result = result
 
-    def to_json(self):
+    def to_dict(self):
         json_execution_response = {
             "result": self.result,
         }
