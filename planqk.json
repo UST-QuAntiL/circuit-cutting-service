@@ -1,0 +1,9 @@
+{
+  "descriptionFile": "README.md",
+  "name": "circuit-cutting-service",
+  "resources": {
+    "cpu": 1,
+    "memory": 4
+  },
+  "runtime": "DOCKER"
+}
