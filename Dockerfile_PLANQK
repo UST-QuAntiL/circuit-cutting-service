@@ -10,7 +10,7 @@ WORKDIR /app
 COPY . /app
 
 # Install any dependencies specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements_planqk.txt
 
 # Run the command to start the application
 CMD ["python", "main.py"]

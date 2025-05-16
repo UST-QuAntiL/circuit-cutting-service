@@ -5,5 +5,6 @@
     "cpu": 1,
     "memory": 4
   },
-  "runtime": "DOCKER"
+  "runtime": "DOCKER",
+  "serviceId": "0a5e4738-bdd9-4938-b540-92bc8572fd75"
 }

@@ -1,6 +1,6 @@
 from planqk.commons.runtime import FileReader, ResponseHandler
 
-from app import wire_cutter
+from app.wire_cutter import cut_circuit, reconstruct_result
 from app.model.request_combine_results import CombineResultsRequest
 from app.model.request_cut_circuits import CutCircuitsRequest
 
@@ -21,9 +21,9 @@ if __name__ == "__main__":  # prevent recursive spawning of processes
         exit(1)
 
     if input_params["function"] == "cut":
-        result = wire_cutter.cut_circuit(CutCircuitsRequest(**input_data)).to_dict()
+        result = cut_circuit(CutCircuitsRequest(**input_data)).to_dict()
     elif input_params["function"] == "combine":
-        result = wire_cutter.reconstruct_result(
+        result = reconstruct_result(
             CombineResultsRequest(**input_data), input_params["quokka_format"]
         ).to_dict()
     else:

@@ -17,10 +17,29 @@
 #  limitations under the License.
 # ******************************************************************************
 
-import os
-from app.create_app import create_app
+from flask import Flask
+import logging
 
-app = create_app(os.getenv("FLASK_CONFIG") or "default")
+from app.routes_gate_cutting import blp_gate_cutting
+from config import config
+from flask_smorest import Api
+from app.routes_wire_cutting import blp
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5076)
+
+def create_app(config_name):
+    app = Flask(__name__)
+    app.logger.setLevel(logging.DEBUG)
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
+
+    api = Api(app)
+    api.register_blueprint(blp)
+    api.register_blueprint(blp_gate_cutting)
+
+    @app.route("/")
+    def heartbeat():
+        return '<h1>Circuit cutting service is running</h1> <h3>View the API Docs <a href="/api/swagger-ui">here</a></h3>'
+
+    from app import routes_wire_cutting
+
+    return app
