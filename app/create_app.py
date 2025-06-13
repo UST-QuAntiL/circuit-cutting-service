@@ -1,5 +1,5 @@
 # ******************************************************************************
-#  Copyright (c) 2023 University of Stuttgart
+#  Copyright (c) 2020 University of Stuttgart
 #
 #  See the NOTICE file(s) distributed with this work for additional
 #  information regarding copyright ownership.
@@ -17,26 +17,29 @@
 #  limitations under the License.
 # ******************************************************************************
 
-import argschema.fields
-import marshmallow as ma
-import numpy as np
+from flask import Flask
+import logging
+
+from app.routes_gate_cutting import blp_gate_cutting
+from config import config
+from flask_smorest import Api
+from app.routes_wire_cutting import blp
 
 
-class CombineResultsResponse:
-    def __init__(self, result):
-        super().__init__()
-        self.result = result
+def create_app(config_name):
+    app = Flask(__name__)
+    app.logger.setLevel(logging.DEBUG)
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
 
-    def to_dict(self):
-        json_execution_response = {
-            "result": self.result,
-        }
-        return json_execution_response
+    api = Api(app)
+    api.register_blueprint(blp)
+    api.register_blueprint(blp_gate_cutting)
 
+    @app.route("/")
+    def heartbeat():
+        return '<h1>Circuit cutting service is running</h1> <h3>View the API Docs <a href="/api/swagger-ui">here</a></h3>'
 
-class CombineResultsResponseSchema(ma.Schema):
-    result = argschema.fields.NumpyArray(dtype=np.float)
+    from app import routes_wire_cutting
 
-
-class CombineResultsResponseQuokkaSchema(ma.Schema):
-    result = ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Float())
+    return app

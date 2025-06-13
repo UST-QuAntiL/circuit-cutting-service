@@ -1,0 +1,10 @@
+{
+  "descriptionFile": "README.md",
+  "name": "circuit-cutting-service",
+  "resources": {
+    "cpu": 1,
+    "memory": 4
+  },
+  "runtime": "DOCKER",
+  "serviceId": "6ba0f17e-c911-4ace-af8e-4330dd3ab0d6"
+}

@@ -67,14 +67,16 @@ class CutCircuitsResponse:
             init_meas_subcircuit_map, keys=True
         )
 
-    def to_json(self):
+    def to_dict(self):
         json_execution_response = {
             "max_subcircuit_width": self.max_subcircuit_width,
             "subcircuits": self.subcircuits,
             "complete_path_map": self.complete_path_map,
+            "individual_subcircuits": self.individual_subcircuits,
             "num_cuts": self.num_cuts,
             "counter": self.counter,
             "classical_cost": self.classical_cost,
+            "init_meas_subcircuit_map": self.init_meas_subcircuit_map,
         }
         return json_execution_response
 
