@@ -1,0 +1,425 @@
+openapi: 3.0.3
+info:
+  version: "1.0"
+  title: PLANQK Service API
+  description: |
+    API description for a managed PLANQK Service.
+components:
+  schemas:
+    CutCircuitsRequest:
+      type: object
+      properties:
+        max_subcircuit_width:
+          type: integer
+        method:
+          type: string
+        circuit:
+          type: string
+        circuit_format:
+          type: string
+        max_cuts:
+          type: integer
+        subcircuit_vertices:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+        max_num_subcircuits:
+          type: integer
+      required:
+        - circuit
+        - method
+    CutCircuitsResponse:
+      type: object
+      properties:
+        individual_subcircuits:
+          type: array
+          items:
+            type: string
+        complete_path_map:
+          type: string
+        max_subcircuit_width:
+          type: integer
+        num_cuts:
+          type: integer
+        init_meas_subcircuit_map:
+          type: string
+        subcircuits:
+          type: array
+          items:
+            type: string
+        classical_cost:
+          type: integer
+        counter:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
+    CombineResultsRequest:
+      type: object
+      properties:
+        subcircuit_results:
+          type: array
+          items:
+            type: array
+            items: { }
+        unnormalized_results:
+          type: boolean
+        circuit:
+          type: string
+        circuit_format:
+          type: string
+        cuts:
+          type: object
+        shot_scaling_factor:
+          type: integer
+      required:
+        - circuit
+        - cuts
+        - subcircuit_results
+    CombineResultsResponse:
+      type: object
+      properties:
+        result:
+          type: array
+          items: { }
+    InputData:
+      oneOf:
+        - $ref: '#/components/schemas/CutCircuitsRequest'
+        - $ref: '#/components/schemas/CombineResultsRequest'
+    InputParams:
+      type: object
+      properties:
+        function:
+          type: string
+          enum: [cut, combine]
+        quokka_format:
+          type: boolean
+      required:
+        - function
+    ResultResponse:
+      allOf:
+        - type: object
+          properties:
+            # DO NOT REMOVE THE FOLLOWING LINES
+            _links:
+              type: object
+              properties:
+                status:
+                  $ref: '#/components/schemas/HALLink'
+              additionalProperties:
+                $ref: '#/components/schemas/HALLink'
+            _embedded:
+              type: object
+              properties:
+                status:
+                  $ref: '#/components/schemas/ServiceExecution'
+        - oneOf:
+            - $ref: '#/components/schemas/CutCircuitsResponse'
+            - $ref: '#/components/schemas/CombineResultsResponse'
+    InputDataRef:
+      type: object
+      properties:
+        dataPoolId:
+          type: string
+          example: 87cb778e-ac43-11ec-b909-0242ac120002
+        dataSourceDescriptorId:
+          type: string
+          example: 87cb778e-ac43-11ec-b909-0242ac120002
+        fileId:
+          type: string
+          example: 87cb778e-ac43-11ec-b909-0242ac120002
+      required:
+        - dataPoolId
+        - dataSourceDescriptorId
+        - fileId
+    ServiceExecution:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 87cb778e-ac43-11ec-b909-0242ac120002
+        status:
+          type: string
+          enum: [UNKNOWN, PENDING, RUNNING, SUCCEEDED, CANCELLED, FAILED]
+          example: SUCCEEDED
+        createdAt:
+          type: string
+          example: "2022-01-01 22:38:08"
+        startedAt:
+          type: string
+          example: "2022-01-01 22:39:08"
+        endedAt:
+          type: string
+          example: "2022-01-01 22:40:08"
+    # Representation of link as defined in HAL: https://datatracker.ietf.org/doc/html/draft-kelly-json-hal-11
+    HALLink:
+      type: object
+      properties:
+        href:
+          type: string
+          description: The URL of the link
+        templated:
+          type: boolean
+          description: Whether the link is templated (optional)
+          default: false
+        type:
+          type: string
+          description: The media type of the link (optional)
+        deprecation:
+          type: string
+          description: A URL that provides further information about the deprecation of the link (optional)
+        name:
+          type: string
+          description: The name of the link (optional)
+        profile:
+          type: string
+          description: A URL that provides further information about the profile of the link (optional)
+        title:
+          type: string
+          description: The title of the link (optional)
+        hreflang:
+          type: string
+          description: The language of the link's target resource (optional)
+  securitySchemes:
+    ApplicationCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://gateway.platform.planqk.de/token
+          scopes: {}
+security:
+  - ApplicationCredentials: []
+paths:
+  /:
+    get:
+      tags:
+        - Service API
+      summary: Health checking endpoint
+      description: |
+        This method checks the health of the service.
+      operationId: healthCheck
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Status of the service
+                    example: "Service is up and running"
+    post:
+      tags:
+        - Service API
+      summary: Asynchronous execution of the service
+      description: |
+        This method starts a service execution, which in turn is processed asynchronously by PLANQK. 
+        The location header of the response contains the URL which can be used to query the status and the result of the service execution.
+      operationId: startExecution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                params:
+                  $ref: '#/components/schemas/InputParams'
+              oneOf:
+                - required:
+                    - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/InputData'
+                - required:
+                    - dataRef
+                  properties:
+                    dataRef:
+                      $ref: '#/components/schemas/InputDataRef'
+              additionalProperties: true
+      responses:
+        "201":
+          description: Service execution successfully submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceExecution"
+          headers:
+            Location:
+              description: URL to query the status and the result of a service execution
+              schema:
+                type: string
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /{id}:
+    get:
+      tags:
+        - Service API
+      summary: Check the status of a service execution
+      description: |
+        This method checks the status of a service execution.
+      operationId: getStatus
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The id of a service execution
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceExecution"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /{id}/result:
+    get:
+      tags:
+        - Service API
+      summary: Get the result of a service execution
+      description: |
+        This method retrieves the result of a service execution.
+      operationId: getResult
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The id of a service execution
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResultResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /{id}/result/{file}:
+    get:
+      tags:
+        - Service API
+      summary: Download a result file of a service execution
+      description: |
+        This method downloads a result file of a service execution.
+      operationId: getResultFile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The id of a service execution
+          schema:
+            type: string
+        - in: path
+          name: file
+          required: true
+          description: The name of the result file
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /{id}/log:
+    get:
+      tags:
+        - Service API
+      summary: Get the log output of a service execution
+      description: |
+        This method retrieves the log output of a service execution.
+      operationId: getLog
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The id of a service execution
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /{id}/cancel:
+    put:
+      tags:
+        - Service API
+      summary: Cancel a service execution
+      description: |
+        This method cancels a service execution.
+      operationId: cancelExecution
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: The id of a service execution
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceExecution"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
