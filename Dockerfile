@@ -1,10 +1,16 @@
 FROM python:3.9.0-slim-buster
 
-WORKDIR /circuit-cutting-service
-COPY . /circuit-cutting-service
+# Set the environment variable PYTHONUNBUFFERED to prevent Python from buffering stdout and stderr
+ENV PYTHONUNBUFFERED=1
 
-RUN pip3 install -r requirements.txt 
+# Set the working directory to /app
+WORKDIR /app
 
-ENTRYPOINT [ "python" ]
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-CMD ["circuit-cutting-service.py" ]
+# Install any dependencies specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements_planqk.txt
+
+# Run the command to start the application
+CMD ["python", "main.py"]

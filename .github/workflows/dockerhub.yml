@@ -30,6 +30,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
+          file: Dockerfile_Quokka  # <-- Add this line
           push: true
           tags: planqk/circuit-cutting-service:latest
 
@@ -38,5 +39,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
+          file: Dockerfile_Quokka
           push: true
           tags: planqk/circuit-cutting-service:${{ steps.vars.outputs.tag }}

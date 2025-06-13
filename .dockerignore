@@ -17,3 +17,9 @@ __pycache__/
 #Intellij
 .idea/
 *.lp
+.git
+.idea
+.vscode
+.venv
+out
+.DS_Store
